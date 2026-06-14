@@ -1,5 +1,9 @@
 .header {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .title {
@@ -15,6 +19,112 @@
   color: var(--color-text-muted);
   margin: 0;
 }
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.refreshBtn {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  background: none;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.refreshBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ── Filter bar ── */
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.dateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.filterLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.dateInput {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  color: var(--color-text);
+}
+
+.dateInput:focus {
+  border-color: var(--color-primary);
+}
+
+.groupToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.toggleBtn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.toggleBtn:hover {
+  background: var(--color-neutral-dark);
+  color: var(--color-text);
+}
+
+.toggleActive {
+  background: var(--color-primary);
+  color: white;
+}
+
+.toggleActive:hover {
+  background: var(--color-primary-dark);
+  color: white;
+}
+
+/* ── Loading / Empty ── */
 
 .loading {
   padding: 3rem;
@@ -60,6 +170,7 @@
   padding: 1.25rem;
   background: white;
   border: 1px solid var(--color-border);
+  position: relative;
 }
 
 .statCardWarning {
@@ -98,6 +209,24 @@
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.changeUp {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #16A34A;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.changeDown {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #DC2626;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
 }
 
 /* ── Chart grid ── */
@@ -161,7 +290,7 @@
   letter-spacing: 0.08em;
 }
 
-/* ── Ranked lists (top products / top sellers) ── */
+/* ── Ranked lists ── */
 
 .rankList {
   display: flex;

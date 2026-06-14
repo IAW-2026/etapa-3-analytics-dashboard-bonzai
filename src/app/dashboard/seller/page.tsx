@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
 } from "recharts";
 import {
   ShoppingCart, DollarSign, Package, Users, Star, BookMarked,
-  TrendingUp, Award,
+  TrendingUp, Award, RefreshCw, PieChart as PieChartIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { ChartCard } from "@/components/charts/ChartCard/ChartCard";
+import { ExportCsvButton } from "@/components/ui/ExportCsvButton/ExportCsvButton";
 import styles from "./page.module.css";
 
 const COLORS = ["#1B3D2F", "#2D5A46", "#6B7D5F", "#8A9B7E", "#D4A853", "#E2C47A", "#C5C0B0", "#A0B09A"];
+const STATUS_COLORS = { pending: "#D4A853", paid: "#1B3D2F", awaiting: "#6B7D5F", shipped: "#2D5A46", cancelled: "#8B7355" };
 
 function formatCurrency(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -25,39 +27,82 @@ function formatMonth(m: string) {
   return `${months[parseInt(mo, 10) - 1]} ${y}`;
 }
 
+function pctChange(current: number, previous: number): string | null {
+  if (!previous) return null;
+  const change = ((current - previous) / previous) * 100;
+  return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
+}
+
 export default function SellerAnalyticsPage() {
+  const today = new Date().toISOString().slice(0, 10);
+  const sixMonthsAgo = new Date(Date.now() - 180 * 86400000).toISOString().slice(0, 10);
+
+  const [from, setFrom] = useState(sixMonthsAgo);
+  const [to, setTo] = useState(today);
+  const [groupBy, setGroupBy] = useState("month");
   const [stats, setStats] = useState<any>(null);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [ordersData, setOrdersData] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any>(null);
   const [reservations, setReservations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     setLoading(true);
     Promise.all([
       api.getStatistics(),
+      api.getAnalyticsRevenue(from, to, groupBy),
+      api.getAnalyticsOrders(from, to, groupBy),
       api.getAnalyticsReviews(),
       api.getAnalyticsReservations(),
     ])
-      .then(([s, r, res]) => {
+      .then(([s, rev, ord, rvw, res]) => {
         setStats(s);
-        setReviews(r);
+        setRevenueData(rev.revenue?.map((d: any) => ({ ...d, month: d.period })) || []);
+        setOrdersData(ord.orders?.map((d: any) => ({ ...d, month: d.period })) || []);
+        setReviews(rvw);
         setReservations(res);
       })
-      .catch(() => { setStats(null); setReviews(null); setReservations(null); })
+      .catch(() => { setStats(null); setRevenueData([]); setOrdersData([]); setReviews(null); setReservations(null); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [from, to, groupBy]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) return <div className={styles.loading}>Loading analytics data…</div>;
   if (!stats) return <div className={styles.empty}>Could not load Seller App data. Verify the API is running and NEXT_PUBLIC_API_URL is correct.</div>;
 
   const s = stats.summary || {};
-  const revenueData = (stats.revenueTrend || stats.monthlyRevenue || []).map((d: any) => ({ ...d, month: formatMonth(d.month) }));
-  const ordersData = (stats.monthlyOrders || []).map((d: any) => ({ ...d, month: formatMonth(d.month) }));
-  const catData = (stats.topCategories || []).slice(0, 8);
-  const topProducts = stats.topProducts || [];
-  const topSellers = stats.topSellers || [];
-  const reviewDist = reviews?.metrics?.distribution ? Object.entries(reviews.metrics.distribution).map(([k, v]) => ({ rating: `${k} ★`, count: v as number })).reverse() : [];
-  const resMetrics = reservations?.metrics;
+  const trend = stats.revenueTrend || [];
+
+  /* ── Status breakdown ── */
+  const statusTotals = ordersData.reduce((acc: any, o: any) => {
+    acc.pending = (acc.pending || 0) + (o.pending || 0);
+    acc.paid = (acc.paid || 0) + (o.paid || 0);
+    acc.awaiting = (acc.awaiting || 0) + (o.awaiting || 0);
+    acc.shipped = (acc.shipped || 0) + (o.shipped || 0);
+    acc.cancelled = (acc.cancelled || 0) + (o.cancelled || 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const statusData = Object.entries(statusTotals).map(([k, v]) => ({
+    name: k === "awaiting" ? "Awaiting" : k.charAt(0).toUpperCase() + k.slice(1),
+    value: v as number,
+    color: STATUS_COLORS[k as keyof typeof STATUS_COLORS],
+  }));
+
+  /* ── % change on revenue trend ── */
+  const lastRev = trend.length >= 2 ? trend[trend.length - 1].revenue : null;
+  const prevRev = trend.length >= 2 ? trend[trend.length - 2].revenue : null;
+  const revChange = lastRev != null && prevRev != null ? pctChange(lastRev, prevRev) : null;
+  const lastOrd = trend.length >= 2 ? trend[trend.length - 1].orders : null;
+  const prevOrd = trend.length >= 2 ? trend[trend.length - 2].orders : null;
+  const ordChange = lastOrd != null && prevOrd != null ? pctChange(lastOrd, prevOrd) : null;
+
+  /* ── CSV rows ── */
+  const csvRevenue = revenueData.map((d: any) => [d.month, String(d.revenue || 0), String(d.orders || 0)]);
+  const csvOrders = ordersData.map((d: any) => [d.month, String(d.total || 0)]);
+  const csvStatus = statusData.map((d: any) => [d.name, String(d.value)]);
 
   return (
     <div>
@@ -66,9 +111,47 @@ export default function SellerAnalyticsPage() {
           <h1 className={styles.title}>Seller App Analytics</h1>
           <p className={styles.description}>Consolidated metrics and reports from the Seller App.</p>
         </div>
+        <div className={styles.headerActions}>
+          <ExportCsvButton
+            filename="seller-analytics.csv"
+            headers={["Metric", "Value"]}
+            rows={[
+              ["Sellers", String(s.totalSellers ?? "")],
+              ["Products", String(s.totalProducts ?? "")],
+              ["Orders", String(s.totalOrders ?? "")],
+              ["Revenue", formatCurrency(s.totalRevenue ?? 0)],
+              ["Avg Rating", String(s.averageRating ?? "")],
+              ["Reservations", String(s.totalReservations ?? "")],
+              ["Buyers", String(s.uniqueBuyers ?? "")],
+              ["Conversion Rate", s.reservationConversionRate != null ? `${s.reservationConversionRate}%` : ""],
+            ]}
+            label="Export CSV"
+          />
+          <button onClick={fetchData} className={styles.refreshBtn} title="Refresh data">
+            <RefreshCw size={12} />
+            Refresh
+          </button>
+        </div>
       </header>
 
-      {/* ── Stat cards ── */}
+      {/* ── Filters ── */}
+      <div className={styles.filterBar}>
+        <div className={styles.dateGroup}>
+          <label className={styles.filterLabel}>From</label>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={styles.dateInput} />
+        </div>
+        <div className={styles.dateGroup}>
+          <label className={styles.filterLabel}>To</label>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={styles.dateInput} />
+        </div>
+        <div className={styles.groupToggle}>
+          <button onClick={() => setGroupBy("day")} className={`${styles.toggleBtn} ${groupBy === "day" ? styles.toggleActive : ""}`}>Day</button>
+          <button onClick={() => setGroupBy("week")} className={`${styles.toggleBtn} ${groupBy === "week" ? styles.toggleActive : ""}`}>Week</button>
+          <button onClick={() => setGroupBy("month")} className={`${styles.toggleBtn} ${groupBy === "month" ? styles.toggleActive : ""}`}>Month</button>
+        </div>
+      </div>
+
+      {/* ── Stat cards with % change ── */}
       <div className={styles.statGrid}>
         <div className={styles.statCard}>
           <Users size={16} className={styles.statIcon} />
@@ -84,11 +167,13 @@ export default function SellerAnalyticsPage() {
           <ShoppingCart size={16} className={styles.statIcon} />
           <span className={styles.statValue}>{s.totalOrders ?? "—"}</span>
           <span className={styles.statLabel}>Orders</span>
+          {ordChange && <span className={ordChange.startsWith("+") ? styles.changeUp : styles.changeDown}>{ordChange}</span>}
         </div>
         <div className={styles.statCard}>
           <DollarSign size={16} className={styles.statIcon} />
           <span className={styles.statValue}>{s.totalRevenue != null ? formatCurrency(s.totalRevenue) : "—"}</span>
           <span className={styles.statLabel}>Revenue</span>
+          {revChange && <span className={revChange.startsWith("+") ? styles.changeUp : styles.changeDown}>{revChange}</span>}
         </div>
         <div className={styles.statCard}>
           <Star size={16} className={styles.statIcon} />
@@ -115,7 +200,10 @@ export default function SellerAnalyticsPage() {
       {/* ── Revenue & Orders charts ── */}
       <div className={styles.chartGrid}>
         {revenueData.length > 0 && (
-          <ChartCard title="Revenue Trend" description="Monthly revenue over time" tall>
+          <ChartCard title="Revenue Trend" description="Revenue over time" tall>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 1rem 0.5rem" }}>
+              <ExportCsvButton filename="revenue-trend.csv" headers={["Period", "Revenue", "Orders"]} rows={csvRevenue} label="CSV" />
+            </div>
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={revenueData}>
                 <defs>
@@ -125,7 +213,7 @@ export default function SellerAnalyticsPage() {
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} tickFormatter={(v: any) => `$${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} tickFormatter={(v: any) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
                 <Tooltip formatter={(v: any) => formatCurrency(v)} contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
                 <Area type="monotone" dataKey="revenue" stroke="#1B3D2F" strokeWidth={2} fill="url(#revGrad)" />
               </AreaChart>
@@ -134,29 +222,33 @@ export default function SellerAnalyticsPage() {
         )}
 
         {ordersData.length > 0 && (
-          <ChartCard title="Orders Over Time" description="Monthly order count" tall>
+          <ChartCard title="Orders Over Time" description="Order count over time" tall>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 1rem 0.5rem" }}>
+              <ExportCsvButton filename="orders-trend.csv" headers={["Period", "Orders"]} rows={csvOrders} label="CSV" />
+            </div>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={ordersData}>
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
-                <Bar dataKey="orders" fill="#2D5A46" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="total" fill="#2D5A46" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
         )}
       </div>
 
-      {/* ── Categories & Review Distribution ── */}
+      {/* ── Categories, Review Distribution & Order Status ── */}
       <div className={styles.chartGrid}>
-        {catData.length > 0 && (
+        {(stats.topCategories || []).length > 0 && (
           <ChartCard title="Revenue by Category" description="Top categories by revenue" tall>
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={catData} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}
+                <Pie data={stats.topCategories.slice(0, 8)} dataKey="revenue" nameKey="name"
+                  cx="50%" cy="50%" outerRadius={90} innerRadius={50}
                   label={({ percent }: any) => `${((percent || 0) * 100).toFixed(0)}%`}
                   labelLine={false}>
-                  {catData.map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  {(stats.topCategories.slice(0, 8) as any[]).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(v: any) => formatCurrency(v)} contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
               </PieChart>
@@ -164,10 +256,10 @@ export default function SellerAnalyticsPage() {
           </ChartCard>
         )}
 
-        {reviewDist.length > 0 && (
+        {(reviews?.metrics?.distribution ? Object.entries(reviews.metrics.distribution).map(([k, v]) => ({ rating: `${k} ★`, count: v as number })).reverse() : []).length > 0 && (
           <ChartCard title="Review Distribution" description="Rating breakdown" tall>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={reviewDist} layout="vertical">
+              <BarChart data={Object.entries(reviews.metrics.distribution).map(([k, v]) => ({ rating: `${k} ★`, count: v as number })).reverse()} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <YAxis dataKey="rating" type="category" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} width={50} />
                 <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
@@ -176,33 +268,69 @@ export default function SellerAnalyticsPage() {
             </ResponsiveContainer>
           </ChartCard>
         )}
+
+        {statusData.length > 0 && (
+          <ChartCard title="Order Status Breakdown" description="Orders by current status" tall>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 1rem 0.5rem" }}>
+              <ExportCsvButton filename="order-status.csv" headers={["Status", "Count"]} rows={csvStatus} label="CSV" />
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={statusData} dataKey="value" nameKey="name"
+                  cx="50%" cy="50%" outerRadius={80} innerRadius={45}
+                  label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                  labelLine={false}>
+                  {statusData.map((d: any) => <Cell key={d.name} fill={d.color} />)}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        )}
+
+        {ordersData.length > 0 && (
+          <ChartCard title="Orders by Status Over Time" description="Status distribution per period" tall>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={ordersData}>
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
+                <Bar dataKey="pending" stackId="a" fill="#D4A853" />
+                <Bar dataKey="paid" stackId="a" fill="#1B3D2F" />
+                <Bar dataKey="awaiting" stackId="a" fill="#6B7D5F" />
+                <Bar dataKey="shipped" stackId="a" fill="#2D5A46" />
+                <Bar dataKey="cancelled" stackId="a" fill="#8B7355" />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        )}
       </div>
 
       {/* ── Reservation metrics ── */}
-      {resMetrics && (
+      {reservations?.metrics && (
         <div className={styles.resGrid}>
           <div className={styles.resCard}>
-            <span className={styles.resValue}>{resMetrics.total}</span>
+            <span className={styles.resValue}>{reservations.metrics.total}</span>
             <span className={styles.resLabel}>Total</span>
           </div>
           <div className={styles.resCard}>
-            <span className={styles.resValue}>{resMetrics.active}</span>
+            <span className={styles.resValue}>{reservations.metrics.active}</span>
             <span className={styles.resLabel}>Active</span>
           </div>
           <div className={styles.resCard}>
-            <span className={styles.resValue}>{resMetrics.completed}</span>
+            <span className={styles.resValue}>{reservations.metrics.completed}</span>
             <span className={styles.resLabel}>Completed</span>
           </div>
           <div className={styles.resCard}>
-            <span className={styles.resValue}>{resMetrics.cancelled}</span>
+            <span className={styles.resValue}>{reservations.metrics.cancelled}</span>
             <span className={styles.resLabel}>Cancelled</span>
           </div>
           <div className={styles.resCard}>
-            <span className={styles.resValue}>{resMetrics.expired}</span>
+            <span className={styles.resValue}>{reservations.metrics.expired}</span>
             <span className={styles.resLabel}>Expired</span>
           </div>
           <div className={styles.resCard}>
-            <span className={styles.resValue}>{resMetrics.conversionRate != null ? `${resMetrics.conversionRate}%` : "—"}</span>
+            <span className={styles.resValue}>{reservations.metrics.conversionRate != null ? `${reservations.metrics.conversionRate}%` : "—"}</span>
             <span className={styles.resLabel}>Conversion Rate</span>
           </div>
         </div>
@@ -210,10 +338,10 @@ export default function SellerAnalyticsPage() {
 
       {/* ── Top Products & Top Sellers ── */}
       <div className={styles.chartGrid}>
-        {topProducts.length > 0 && (
+        {(stats.topProducts || []).length > 0 && (
           <ChartCard title="Top Products" description="Best-selling products by revenue" tall>
             <div className={styles.rankList}>
-              {topProducts.slice(0, 8).map((p: any, i: number) => (
+              {stats.topProducts.slice(0, 8).map((p: any, i: number) => (
                 <div key={i} className={styles.rankRow}>
                   <span className={styles.rankBadge}>{i + 1}</span>
                   <div className={styles.rankInfo}>
@@ -227,10 +355,10 @@ export default function SellerAnalyticsPage() {
           </ChartCard>
         )}
 
-        {topSellers.length > 0 && (
+        {(stats.topSellers || []).length > 0 && (
           <ChartCard title="Top Sellers" description="Sellers with highest revenue" tall>
             <div className={styles.rankList}>
-              {topSellers.slice(0, 8).map((s: any, i: number) => (
+              {stats.topSellers.slice(0, 8).map((s: any, i: number) => (
                 <div key={i} className={styles.rankRow}>
                   <span className={styles.rankBadge}>{i + 1}</span>
                   <div className={styles.rankInfo}>
