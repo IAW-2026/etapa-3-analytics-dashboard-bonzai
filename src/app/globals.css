@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #1B3D2F;
+  --color-primary-light: #2D5A46;
+  --color-primary-dark: #0F2A20;
+  --color-secondary: #6B7D5F;
+  --color-secondary-light: #8A9B7E;
+  --color-accent: #D4A853;
+  --color-accent-light: #E2C47A;
+  --color-neutral: #F8F7F2;
+  --color-neutral-dark: #E7E3D8;
+  --color-neutral-darker: #C5C0B0;
+  --color-text: #1A1A1A;
+  --color-text-muted: #6B7280;
+  --color-text-inverse: #F8F7F2;
+  --color-error: #DC2626;
+  --color-success: #16A34A;
+  --color-warning: #8B7355;
+  --color-border: #E5E7EB;
+  --color-ring: #1B3D2F;
+  --color-bg: #fdfdfc;
+  --color-card-bg: #fcfcfb;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+@theme inline {
+  --color-background: var(--color-neutral);
+  --color-foreground: var(--color-text);
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+
+::selection {
+  background: #1a3a2b;
+  color: #f8f7f2;
+}
+
+::-moz-selection {
+  background: #1a3a2b;
+  color: #f8f7f2;
+}
+
+body {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-neutral);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
