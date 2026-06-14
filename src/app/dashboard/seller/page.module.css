@@ -124,6 +124,14 @@
   color: white;
 }
 
+.skelCard {
+  border: 1px solid var(--color-border);
+}
+
+.skelGap {
+  margin-top: 0.5rem;
+}
+
 /* ── Loading / Empty ── */
 
 .loading {

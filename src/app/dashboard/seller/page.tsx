@@ -12,6 +12,7 @@ import {
 import { api } from "@/lib/api";
 import { ChartCard } from "@/components/charts/ChartCard/ChartCard";
 import { ExportCsvButton } from "@/components/ui/ExportCsvButton/ExportCsvButton";
+import { Skeleton } from "@/components/ui/Skeleton/Skeleton";
 import styles from "./page.module.css";
 
 const COLORS = ["#1B3D2F", "#2D5A46", "#6B7D5F", "#8A9B7E", "#D4A853", "#E2C47A", "#C5C0B0", "#A0B09A"];
@@ -69,7 +70,31 @@ export default function SellerAnalyticsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading) return <div className={styles.loading}>Loading analytics data…</div>;
+  if (loading) return (
+    <div>
+      <div className={styles.header}>
+        <div><Skeleton width={240} height={28} /><Skeleton width={320} height={16} className={styles.skelGap} /></div>
+        <Skeleton width={160} height={32} />
+      </div>
+      <div className={styles.filterBar}>
+        <Skeleton width={120} height={28} />
+        <Skeleton width={120} height={28} />
+        <Skeleton width={200} height={28} />
+      </div>
+      <div className={styles.statGrid}>
+        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={100} className={styles.skelCard} />)}
+      </div>
+      <div className={styles.chartGrid}>
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={320} className={styles.skelCard} />)}
+      </div>
+      <div className={styles.resGrid}>
+        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={80} className={styles.skelCard} />)}
+      </div>
+      <div className={styles.chartGrid}>
+        {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} height={280} className={styles.skelCard} />)}
+      </div>
+    </div>
+  );
   if (!stats) return <div className={styles.empty}>Could not load Seller App data. Verify the API is running and NEXT_PUBLIC_API_URL is correct.</div>;
 
   const s = stats.summary || {};
