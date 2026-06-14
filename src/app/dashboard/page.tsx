@@ -1,10 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BarChart3, Store, CreditCard, Users, Truck, TrendingUp } from "lucide-react";
+import { Store, CreditCard, Users, Truck, TrendingUp, ShoppingCart, DollarSign, Package, Star } from "lucide-react";
+import { api } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton/Skeleton";
 import styles from "./page.module.css";
 
+function formatCurrency(n: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+}
+
 export default function DashboardPage() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getStatistics()
+      .then(setStats)
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const s = stats?.summary || {};
+
   return (
     <div>
       <header className={styles.header}>
@@ -14,6 +32,82 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {loading ? (
+        <div className={styles.sectionLabel} style={{ marginBottom: "0.75rem" }}>
+          <Skeleton width={140} height={18} />
+        </div>
+      ) : stats ? (
+        <>
+          <h2 className={styles.sectionLabel}>
+            <Store size={14} /> Seller App
+          </h2>
+          <div className={styles.statGrid}>
+            <div className={styles.statCard}>
+              <Users size={14} className={styles.statIcon} />
+              <span className={styles.statValue}>{s.totalSellers ?? "—"}</span>
+              <span className={styles.statLabel}>Sellers</span>
+            </div>
+            <div className={styles.statCard}>
+              <Package size={14} className={styles.statIcon} />
+              <span className={styles.statValue}>{s.totalProducts ?? "—"}</span>
+              <span className={styles.statLabel}>Products</span>
+            </div>
+            <div className={styles.statCard}>
+              <ShoppingCart size={14} className={styles.statIcon} />
+              <span className={styles.statValue}>{s.totalOrders ?? "—"}</span>
+              <span className={styles.statLabel}>Orders</span>
+            </div>
+            <div className={styles.statCard}>
+              <DollarSign size={14} className={styles.statIcon} />
+              <span className={styles.statValue}>{s.totalRevenue != null ? formatCurrency(s.totalRevenue) : "—"}</span>
+              <span className={styles.statLabel}>Revenue</span>
+            </div>
+            <div className={styles.statCard}>
+              <Star size={14} className={styles.statIcon} />
+              <span className={styles.statValue}>{s.averageRating ?? "—"}</span>
+              <span className={styles.statLabel}>Avg Rating</span>
+            </div>
+            <div className={styles.statCard}>
+              <TrendingUp size={14} className={styles.statIcon} />
+              <span className={styles.statValue}>{s.reservationConversionRate != null ? `${s.reservationConversionRate}%` : "—"}</span>
+              <span className={styles.statLabel}>Conversion</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className={styles.empty}>Could not connect to Seller App. Verify the API endpoint.</div>
+      )}
+
+      {/* ── Placeholder sections for other apps ── */}
+      {!loading && (
+        <>
+          <h2 className={styles.sectionLabel} style={{ marginTop: "2rem" }}>
+            <CreditCard size={14} /> Payments App
+          </h2>
+          <div className={styles.placeholderCard}>
+            <p className={styles.placeholderText}>Coming soon — integrate the Payments App API to see transaction metrics.</p>
+          </div>
+
+          <h2 className={styles.sectionLabel} style={{ marginTop: "1.5rem" }}>
+            <Users size={14} /> Buyer App
+          </h2>
+          <div className={styles.placeholderCard}>
+            <p className={styles.placeholderText}>Coming soon — integrate the Buyer App API to see user behavior metrics.</p>
+          </div>
+
+          <h2 className={styles.sectionLabel} style={{ marginTop: "1.5rem" }}>
+            <Truck size={14} /> Shipping App
+          </h2>
+          <div className={styles.placeholderCard}>
+            <p className={styles.placeholderText}>Coming soon — integrate the Shipping App API to see logistics metrics.</p>
+          </div>
+        </>
+      )}
+
+      {/* ── App navigation cards ── */}
+      <h2 className={styles.sectionLabel} style={{ marginTop: "2rem" }}>
+        Explore
+      </h2>
       <div className={styles.grid}>
         <AppCard
           icon={<Store size={20} />}
