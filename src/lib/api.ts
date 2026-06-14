@@ -8,7 +8,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...(options?.headers as Record<string, string> || {}),
   };
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers, cache: "no-store" });
 
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
@@ -22,6 +22,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getAnalyticsOverview: () => request<any>("/api/admin/analytics"),
   getStatistics: () => request<any>("/api/admin/statistics"),
+  getAnalyticsOverview: () => request<any>("/api/admin/analytics"),
+  getAnalyticsOrders: (from?: string, to?: string, groupBy?: string) =>
+    request<any>(`/api/admin/analytics/orders?${new URLSearchParams({ ...(from && { from }), ...(to && { to }), ...(groupBy && { groupBy }) }).toString()}`),
+  getAnalyticsRevenue: (from?: string, to?: string, interval?: string) =>
+    request<any>(`/api/admin/analytics/revenue?${new URLSearchParams({ ...(from && { from }), ...(to && { to }), ...(interval && { interval }) }).toString()}`),
+  getAnalyticsCategories: (from?: string, to?: string) =>
+    request<any>(`/api/admin/analytics/categories?${new URLSearchParams({ ...(from && { from }), ...(to && { to }) }).toString()}`),
+  getAnalyticsReviews: (from?: string, to?: string) =>
+    request<any>(`/api/admin/analytics/reviews?${new URLSearchParams({ ...(from && { from }), ...(to && { to }) }).toString()}`),
+  getAnalyticsReservations: (from?: string, to?: string) =>
+    request<any>(`/api/admin/analytics/reservations?${new URLSearchParams({ ...(from && { from }), ...(to && { to }) }).toString()}`),
+  getTopProducts: (limit?: number) =>
+    request<any>(`/api/admin/analytics/products/top?limit=${limit || 10}`),
+  getTopSellers: (limit?: number) =>
+    request<any>(`/api/admin/analytics/sellers/top?limit=${limit || 10}`),
 };

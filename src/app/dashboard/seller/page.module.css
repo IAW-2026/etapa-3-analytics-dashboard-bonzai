@@ -32,10 +32,13 @@
   background: white;
 }
 
+/* ── Stat cards ── */
+
 .statGrid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 @media (min-width: 640px) {
@@ -59,8 +62,18 @@
   border: 1px solid var(--color-border);
 }
 
+.statCardWarning {
+  border-color: #8B7355;
+  background: rgba(139, 115, 85, 0.03);
+}
+
 .statIcon {
   color: var(--color-primary);
+  margin-bottom: 0.25rem;
+}
+
+.statIconWarning {
+  color: #8B7355;
   margin-bottom: 0.25rem;
 }
 
@@ -72,9 +85,136 @@
   line-height: 1;
 }
 
+.statValueWarning {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #8B7355;
+  line-height: 1;
+}
+
 .statLabel {
   font-size: 0.7rem;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* ── Chart grid ── */
+
+.chartGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .chartGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Reservation metrics ── */
+
+.resGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+  .resGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .resGrid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.resCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.25rem;
+  background: white;
+  border: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.resValue {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.resLabel {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Ranked lists (top products / top sellers) ── */
+
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 1rem;
+}
+
+.rankRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rankBadge {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-neutral-dark);
+  flex-shrink: 0;
+}
+
+.rankInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.rankName {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rankMeta {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+.rankValue {
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  flex-shrink: 0;
 }
