@@ -53,9 +53,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
       <nav className={styles.nav}>
         {navItems.map((item) => {
+          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
           const linkClasses = [
             styles.navLink,
-            pathname === item.href ? styles.navLinkActive : styles.navLinkInactive,
+            isActive ? styles.navLinkActive : styles.navLinkInactive,
           ].filter(Boolean).join(" ");
           return (
             <a key={item.href} href={item.href} className={linkClasses}
