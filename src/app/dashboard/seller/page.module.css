@@ -44,9 +44,14 @@
   transition: border-color 0.2s, color 0.2s;
 }
 
-.refreshBtn:hover {
+.refreshBtn:hover:not(:disabled) {
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── Filter bar ── */
@@ -354,4 +359,13 @@
   font-weight: 500;
   color: var(--color-primary);
   flex-shrink: 0;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.refreshBtnSpin {
+  animation: spin 1s linear infinite;
 }

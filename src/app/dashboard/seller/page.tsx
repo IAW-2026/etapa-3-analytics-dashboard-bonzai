@@ -95,44 +95,17 @@ export default function SellerAnalyticsPage() {
     return () => clearTimeout(urlRef.current);
   }, [from, to, groupBy]);
 
-  if (loading) return (
-    <div>
-      <div className={styles.header}>
-        <div><Skeleton width={240} height={28} /><Skeleton width={320} height={16} className={styles.skelGap} /></div>
-        <Skeleton width={160} height={32} />
-      </div>
-      <div className={styles.filterBar}>
-        <Skeleton width={120} height={28} />
-        <Skeleton width={120} height={28} />
-        <Skeleton width={200} height={28} />
-      </div>
-      <div className={styles.statGrid}>
-        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={100} className={styles.skelCard} />)}
-      </div>
-      <div className={styles.chartGrid}>
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={320} className={styles.skelCard} />)}
-      </div>
-      <div className={styles.resGrid}>
-        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={80} className={styles.skelCard} />)}
-      </div>
-      <div className={styles.chartGrid}>
-        {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} height={280} className={styles.skelCard} />)}
-      </div>
-    </div>
-  );
-  if (!stats) return <div className={styles.empty}>Could not load Seller App data. Verify the API is running and NEXT_PUBLIC_API_URL is correct.</div>;
+  const s = stats?.summary || {};
+  const trend = stats?.revenueTrend || [];
 
-  const s = stats.summary || {};
-  const trend = stats.revenueTrend || [];
-
-  const statusTotals = ordersData.reduce((acc: any, o: any) => {
+  const statusTotals = ordersData ? ordersData.reduce((acc: any, o: any) => {
     acc.pending = (acc.pending || 0) + (o.pending || 0);
     acc.paid = (acc.paid || 0) + (o.paid || 0);
     acc.awaiting = (acc.awaiting || 0) + (o.awaiting || 0);
     acc.shipped = (acc.shipped || 0) + (o.shipped || 0);
     acc.cancelled = (acc.cancelled || 0) + (o.cancelled || 0);
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, number>) : {};
 
   const statusData = Object.entries(statusTotals).map(([k, v]) => ({
     name: k === "awaiting" ? "Awaiting" : k.charAt(0).toUpperCase() + k.slice(1),
@@ -147,8 +120,8 @@ export default function SellerAnalyticsPage() {
   const prevOrd = trend.length >= 2 ? trend[trend.length - 2].orders : null;
   const ordChange = lastOrd != null && prevOrd != null ? pctChange(lastOrd, prevOrd) : null;
 
-  const csvRevenue = revenueData.map((d: any) => [d.month, String(d.revenue || 0), String(d.orders || 0)]);
-  const csvOrders = ordersData.map((d: any) => [d.month, String(d.total || 0)]);
+  const csvRevenue = revenueData ? revenueData.map((d: any) => [d.month, String(d.revenue || 0), String(d.orders || 0)]) : [];
+  const csvOrders = ordersData ? ordersData.map((d: any) => [d.month, String(d.total || 0)]) : [];
   const csvStatus = statusData.map((d: any) => [d.name, String(d.value)]);
 
   return (
@@ -173,9 +146,10 @@ export default function SellerAnalyticsPage() {
               ["Conversion Rate", s.reservationConversionRate != null ? `${s.reservationConversionRate}%` : ""],
             ]}
             label="Export CSV"
+            disabled={loading || !stats}
           />
-          <button onClick={() => { clearTimeout(fetchRef.current); doFetch(); }} className={styles.refreshBtn} title="Refresh data">
-            <RefreshCw size={12} />
+          <button onClick={() => { clearTimeout(fetchRef.current); doFetch(); }} className={styles.refreshBtn} title="Refresh data" disabled={loading}>
+            <RefreshCw size={12} className={loading ? styles.refreshBtnSpin : ""} />
             Refresh
           </button>
         </div>
@@ -184,20 +158,39 @@ export default function SellerAnalyticsPage() {
       <div className={styles.filterBar}>
         <div className={styles.dateGroup}>
           <label className={styles.filterLabel}>From</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={styles.dateInput} />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={styles.dateInput} disabled={loading} />
         </div>
         <div className={styles.dateGroup}>
           <label className={styles.filterLabel}>To</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={styles.dateInput} />
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={styles.dateInput} disabled={loading} />
         </div>
         <div className={styles.groupToggle}>
-          <button onClick={() => setGroupBy("day")} className={`${styles.toggleBtn} ${groupBy === "day" ? styles.toggleActive : ""}`}>Day</button>
-          <button onClick={() => setGroupBy("week")} className={`${styles.toggleBtn} ${groupBy === "week" ? styles.toggleActive : ""}`}>Week</button>
-          <button onClick={() => setGroupBy("month")} className={`${styles.toggleBtn} ${groupBy === "month" ? styles.toggleActive : ""}`}>Month</button>
+          <button onClick={() => setGroupBy("day")} className={`${styles.toggleBtn} ${groupBy === "day" ? styles.toggleActive : ""}`} disabled={loading}>Day</button>
+          <button onClick={() => setGroupBy("week")} className={`${styles.toggleBtn} ${groupBy === "week" ? styles.toggleActive : ""}`} disabled={loading}>Week</button>
+          <button onClick={() => setGroupBy("month")} className={`${styles.toggleBtn} ${groupBy === "month" ? styles.toggleActive : ""}`} disabled={loading}>Month</button>
         </div>
       </div>
 
-      <div className={styles.statGrid}>
+      {loading ? (
+        <>
+          <div className={styles.statGrid}>
+            {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={100} className={styles.skelCard} />)}
+          </div>
+          <div className={styles.chartGrid}>
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={320} className={styles.skelCard} />)}
+          </div>
+          <div className={styles.resGrid}>
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={80} className={styles.skelCard} />)}
+          </div>
+          <div className={styles.chartGrid}>
+            {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} height={280} className={styles.skelCard} />)}
+          </div>
+        </>
+      ) : !stats ? (
+        <div className={styles.empty}>Could not load Seller App data. Verify the API is running and NEXT_PUBLIC_API_URL is correct.</div>
+      ) : (
+        <>
+          <div className={styles.statGrid}>
         <div className={styles.statCard}>
           <Users size={16} className={styles.statIcon} />
           <span className={styles.statValue}>{s.totalSellers ?? "—"}</span>
@@ -421,6 +414,8 @@ export default function SellerAnalyticsPage() {
           )}
         </div>
       </ErrorBoundary>
+        </>
+      )}
     </div>
   );
 }

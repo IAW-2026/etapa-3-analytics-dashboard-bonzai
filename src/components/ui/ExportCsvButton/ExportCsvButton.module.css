@@ -15,7 +15,12 @@
   transition: border-color 0.2s, color 0.2s;
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

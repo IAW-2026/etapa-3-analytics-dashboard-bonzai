@@ -169,43 +169,6 @@ export default function PaymentsAnalyticsPage() {
     return () => clearTimeout(urlRef.current);
   }, [from, to, interval]);
 
-  // ── Loading skeleton ─────────────────────────────────────────────────────────
-  if (loading) return (
-    <div>
-      <div className={styles.header}>
-        <div><Skeleton width={260} height={28} /><Skeleton width={340} height={16} className={styles.skelGap} /></div>
-        <Skeleton width={120} height={32} />
-      </div>
-      <div className={styles.filterBar}>
-        <Skeleton width={120} height={28} />
-        <Skeleton width={120} height={28} />
-        <Skeleton width={180} height={28} />
-      </div>
-      <div className={styles.statGrid}>
-        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={100} className={styles.skelCard} />)}
-      </div>
-      <div className={styles.chartGrid}>
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={300} className={styles.skelCard} />)}
-      </div>
-      <div className={styles.miniStatGrid}>
-        {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={80} className={styles.skelCard} />)}
-      </div>
-    </div>
-  );
-
-  // ── Error state ──────────────────────────────────────────────────────────────
-  if (error) return (
-    <div>
-      <PageHeader from={from} to={to} interval={interval}
-        setFrom={setFrom} setTo={setTo} setInterval={setInterval}
-        onRefresh={doFetch} exportRows={[]} />
-      <div className={styles.empty}>
-        ⚠️ {error}<br />
-        <small>Verificá que la Payments API esté disponible y que la API key sea correcta.</small>
-      </div>
-    </div>
-  );
-
   // ── CSV data ─────────────────────────────────────────────────────────────────
   const csvOverview = overview ? [
     ["Total Transactions", String(overview.totalTransactions ?? "")],
@@ -218,8 +181,8 @@ export default function PaymentsAnalyticsPage() {
     ["Avg Transaction", String(overview.avgTransactionAmount ?? "")],
   ] : [];
 
-  const csvRevenue = revenue.map((d) => [d.date, String(d.revenue || 0), String(d.commissions || 0), String(d.count || 0)]);
-  const csvSellers = topSellers.map((s, i) => [String(i + 1), s.sellerId, String(s.totalRevenue || 0), String(s.transactionCount || 0), String(s.avgAmount || 0)]);
+  const csvRevenue = revenue ? revenue.map((d: any) => [d.date, String(d.revenue || 0), String(d.commissions || 0), String(d.count || 0)]) : [];
+  const csvSellers = topSellers ? topSellers.map((s: any, i: number) => [String(i + 1), s.sellerId, String(s.totalRevenue || 0), String(s.transactionCount || 0), String(s.avgAmount || 0)]) : [];
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -230,7 +193,28 @@ export default function PaymentsAnalyticsPage() {
         setFrom={setFrom} setTo={setTo} setInterval={setInterval}
         onRefresh={doFetch}
         exportRows={csvOverview}
+        loading={loading}
       />
+
+      {loading ? (
+        <>
+          <div className={styles.statGrid}>
+            {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={100} className={styles.skelCard} />)}
+          </div>
+          <div className={styles.chartGrid}>
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={300} className={styles.skelCard} />)}
+          </div>
+          <div className={styles.miniStatGrid}>
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={80} className={styles.skelCard} />)}
+          </div>
+        </>
+      ) : error ? (
+        <div className={styles.empty}>
+          ⚠️ {error}<br />
+          <small>Verificá que la Payments API esté disponible y que la API key sea correcta.</small>
+        </div>
+      ) : (
+        <>
 
       {/* ── 1. KPI Stat Cards ── */}
       {overview && (
@@ -626,18 +610,20 @@ export default function PaymentsAnalyticsPage() {
           </div>
         </ErrorBoundary>
       )}
+      </>
+      )}
     </div>
   );
 }
 
 // ── Sub-componente Header + FilterBar ─────────────────────────────────────────
 function PageHeader({
-  from, to, interval, setFrom, setTo, setInterval, onRefresh, exportRows,
+  from, to, interval, setFrom, setTo, setInterval, onRefresh, exportRows, loading,
 }: {
   from: string; to: string; interval: string;
   setFrom: (v: string) => void; setTo: (v: string) => void;
   setInterval: (v: "day" | "week" | "month") => void;
-  onRefresh: () => void; exportRows: string[][];
+  onRefresh: () => void; exportRows: string[][]; loading?: boolean;
 }) {
   return (
     <>
@@ -652,9 +638,10 @@ function PageHeader({
             headers={["Métrica", "Valor"]}
             rows={exportRows}
             label="Export CSV"
+            disabled={loading || exportRows.length === 0}
           />
-          <button onClick={onRefresh} className={styles.refreshBtn} title="Actualizar datos">
-            <RefreshCw size={12} /> Refresh
+          <button onClick={onRefresh} className={styles.refreshBtn} title="Actualizar datos" disabled={loading}>
+            <RefreshCw size={12} className={loading ? styles.refreshBtnSpin : ""} /> Refresh
           </button>
         </div>
       </header>
@@ -662,11 +649,11 @@ function PageHeader({
       <div className={styles.filterBar}>
         <div className={styles.dateGroup}>
           <label className={styles.filterLabel}>Desde</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={styles.dateInput} />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={styles.dateInput} disabled={loading} />
         </div>
         <div className={styles.dateGroup}>
           <label className={styles.filterLabel}>Hasta</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={styles.dateInput} />
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={styles.dateInput} disabled={loading} />
         </div>
         <div className={styles.groupToggle}>
           {(["day", "week", "month"] as const).map((v) => (
@@ -674,6 +661,7 @@ function PageHeader({
               key={v}
               onClick={() => setInterval(v)}
               className={`${styles.toggleBtn} ${interval === v ? styles.toggleActive : ""}`}
+              disabled={loading}
             >
               {v === "day" ? "Día" : v === "week" ? "Semana" : "Mes"}
             </button>

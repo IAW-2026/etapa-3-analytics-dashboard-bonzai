@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import {
@@ -59,11 +60,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             isActive ? styles.navLinkActive : styles.navLinkInactive,
           ].filter(Boolean).join(" ");
           return (
-            <a key={item.href} href={item.href} className={linkClasses}
+            <Link key={item.href} href={item.href} className={linkClasses}
               onClick={() => setSidebarOpen(false)}>
               {item.icon}
               {item.label}
-            </a>
+            </Link>
           );
         })}
       </nav>
