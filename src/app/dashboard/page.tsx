@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Store, CreditCard, Users, Truck, TrendingUp, ShoppingCart, DollarSign, Package, Star } from "lucide-react";
+import { Store, CreditCard, Users, Truck, TrendingUp, ShoppingCart, DollarSign, Package, Star, AlertTriangle, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton/Skeleton";
 import styles from "./page.module.css";
@@ -10,14 +10,27 @@ function formatCurrency(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 }
 
+function formatARS(n: number) {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
+  const [paymentsStats, setPaymentsStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getStatistics()
-      .then(setStats)
-      .catch(() => setStats(null))
+    setLoading(true);
+    Promise.all([
+      api.getStatistics().catch(() => null),
+      fetch("/api/payments/overview")
+        .then((res) => (res.ok ? res.json() : null))
+        .catch(() => null),
+    ])
+      .then(([s, p]) => {
+        setStats(s);
+        setPaymentsStats(p);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -84,9 +97,44 @@ export default function DashboardPage() {
           <h2 className={styles.sectionLabel} style={{ marginTop: "2rem" }}>
             <CreditCard size={14} /> Payments App
           </h2>
-          <div className={styles.placeholderCard}>
-            <p className={styles.placeholderText}>Coming soon — integrate the Payments App API to see transaction metrics.</p>
-          </div>
+          {paymentsStats ? (
+            <div className={styles.statGrid}>
+              <div className={styles.statCard}>
+                <CreditCard size={14} className={styles.statIcon} />
+                <span className={styles.statValue}>{paymentsStats.totalTransactions ?? "—"}</span>
+                <span className={styles.statLabel}>Transactions</span>
+              </div>
+              <div className={styles.statCard}>
+                <DollarSign size={14} className={styles.statIcon} />
+                <span className={styles.statValue}>{paymentsStats.totalVolume != null ? formatARS(paymentsStats.totalVolume) : "—"}</span>
+                <span className={styles.statLabel}>Volume</span>
+              </div>
+              <div className={styles.statCard}>
+                <TrendingUp size={14} className={styles.statIcon} />
+                <span className={styles.statValue}>{paymentsStats.totalCommissions != null ? formatARS(paymentsStats.totalCommissions) : "—"}</span>
+                <span className={styles.statLabel}>Commissions</span>
+              </div>
+              <div className={styles.statCard}>
+                <AlertTriangle size={14} className={styles.statIcon} style={{ color: "#DC2626" }} />
+                <span className={styles.statValue}>{paymentsStats.activeDisputes ?? "—"}</span>
+                <span className={styles.statLabel}>Active Disputes</span>
+              </div>
+              <div className={styles.statCard}>
+                <Wallet size={14} className={styles.statIcon} />
+                <span className={styles.statValue}>{paymentsStats.activeWallets ?? "—"}</span>
+                <span className={styles.statLabel}>Active Wallets</span>
+              </div>
+              <div className={styles.statCard}>
+                <DollarSign size={14} className={styles.statIcon} />
+                <span className={styles.statValue}>{paymentsStats.avgTransactionAmount != null ? formatARS(paymentsStats.avgTransactionAmount) : "—"}</span>
+                <span className={styles.statLabel}>Avg Transaction</span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.placeholderCard}>
+              <p className={styles.placeholderText}>Could not load Payments App data. Verify the API is running.</p>
+            </div>
+          )}
 
           <h2 className={styles.sectionLabel} style={{ marginTop: "1.5rem" }}>
             <Users size={14} /> Buyer App
