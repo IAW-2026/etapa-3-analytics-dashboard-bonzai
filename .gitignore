@@ -1,11 +1,14 @@
+*.local
+/docs
+*.tsbuildinfo
 node_modules/
 .next/
-*.local
+out/
+build/
+
+# Archivos de entorno y configuración
 .env*.local
-
-# clerk configuration (can include secrets)
-/.clerk/
-
-/docs
-
-*.tsbuildinfo
+.env
+.clerk/
+# Archivos de sistema
+.DS_Store
