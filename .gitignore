@@ -1,0 +1,14 @@
+*.local
+/docs
+*.tsbuildinfo
+node_modules/
+.next/
+out/
+build/
+
+# Archivos de entorno y configuración
+.env*.local
+.env
+.clerk/
+# Archivos de sistema
+.DS_Store
