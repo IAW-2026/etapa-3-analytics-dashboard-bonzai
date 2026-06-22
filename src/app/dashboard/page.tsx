@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Store, CreditCard, Users, Truck, TrendingUp, ShoppingCart, DollarSign, Package, Star, AlertTriangle, Wallet } from "lucide-react";
+import { Store, CreditCard, Users, Truck, TrendingUp, ShoppingCart, DollarSign, Package, Star, AlertTriangle, Wallet, CheckCircle, XCircle, Clock } from "lucide-react";
 import { api } from "@/lib/api";
+import { shippingApi } from "@/services/shipping";
+import type { DeliveryStats } from "@/types/shipping";
 import { Skeleton } from "@/components/ui/Skeleton/Skeleton";
 import styles from "./page.module.css";
 
@@ -18,6 +20,7 @@ function formatARS(n: number) {
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [paymentsStats, setPaymentsStats] = useState<any>(null);
+  const [shippingStats, setShippingStats] = useState<DeliveryStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,10 +30,12 @@ export default function DashboardPage() {
       fetch("/api/payments/overview")
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
+      shippingApi.getDeliveryStats().catch(() => null),
     ])
-      .then(([s, p]) => {
+      .then(([s, p, sh]) => {
         setStats(s);
         setPaymentsStats(p);
+        setShippingStats(sh);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -162,9 +167,54 @@ export default function DashboardPage() {
       <h2 className={styles.sectionLabel} style={{ marginTop: "1.5rem" }}>
         <Truck size={14} /> Shipping App
       </h2>
-      <div className={styles.placeholderCard}>
-        <p className={styles.placeholderText}>Coming soon — integrate the Shipping App API to see logistics metrics.</p>
-      </div>
+      {loading ? (
+        <div className={styles.statGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className={styles.statCard}>
+              <Skeleton width={14} height={14} className={styles.statIcon} />
+              <Skeleton width={80} height={20} />
+              <Skeleton width={60} height={10} className={styles.statLabel} />
+            </div>
+          ))}
+        </div>
+      ) : shippingStats ? (
+        <div className={styles.statGrid}>
+          <div className={styles.statCard}>
+            <Package size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{shippingStats.total_shipments.toLocaleString()}</span>
+            <span className={styles.statLabel}>Total Shipments</span>
+          </div>
+          <div className={styles.statCard}>
+            <Truck size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{shippingStats.active_shipments.toLocaleString()}</span>
+            <span className={styles.statLabel}>Active</span>
+          </div>
+          <div className={styles.statCard}>
+            <CheckCircle size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{shippingStats.success_rate_percentage}%</span>
+            <span className={styles.statLabel}>Success Rate</span>
+          </div>
+          <div className={styles.statCard}>
+            <CheckCircle size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{shippingStats.by_status.DELIVERED.toLocaleString()}</span>
+            <span className={styles.statLabel}>Delivered</span>
+          </div>
+          <div className={styles.statCard}>
+            <XCircle size={14} className={styles.statIcon} style={{ color: "#DC2626" }} />
+            <span className={styles.statValue}>{shippingStats.by_status.CANCELLED.toLocaleString()}</span>
+            <span className={styles.statLabel}>Cancelled</span>
+          </div>
+          <div className={styles.statCard}>
+            <Clock size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{shippingStats.by_status.PENDING.toLocaleString()}</span>
+            <span className={styles.statLabel}>Pending</span>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.placeholderCard}>
+          <p className={styles.placeholderText}>Could not load Shipping App data. Verify the API is running.</p>
+        </div>
+      )}
 
       {/* ── App navigation cards ── */}
       <h2 className={styles.sectionLabel} style={{ marginTop: "2rem" }}>
