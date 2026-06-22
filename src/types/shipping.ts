@@ -52,3 +52,10 @@ export interface ShipmentByType {
   type: string;
   count: number;
 }
+
+export interface FunnelLevel {
+  label: string;
+  value: number;
+  percentage: number;
+  color: string;
+}

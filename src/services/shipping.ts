@@ -32,9 +32,10 @@ export const shippingApi = {
   getDeliveryStats: () =>
     get<DeliveryStats>("/api/analytics/delivery-stats"),
 
-  getShipments: (page = 1, limit = 10, status?: string) => {
+  getShipments: (page = 1, limit = 10, status?: string, search?: string) => {
     const params: Record<string, string> = { page: String(page), limit: String(limit) };
     if (status) params.status = status;
+    if (search) params.q = search;
     return get<PaginatedResponse<Shipment>>("/api/admin/shipments", params);
   },
 
