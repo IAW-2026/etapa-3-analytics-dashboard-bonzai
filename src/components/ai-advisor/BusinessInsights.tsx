@@ -13,9 +13,9 @@ type AdvisorState =
   | { kind: "error"; message: string };
 
 const SEVERITY_LABELS: Record<string, string> = {
-  positive: "Oportunidad",
-  warning: "Requiere atención",
-  critical: "Crítico",
+  positive: "Opportunity",
+  warning: "Needs attention",
+  critical: "Critical",
 };
 
 export function BusinessInsights() {
@@ -32,7 +32,7 @@ export function BusinessInsights() {
           kind: "error",
           message:
             result.error ||
-            "No se encontraron hallazgos relevantes en este momento.",
+            "No relevant findings were found at this time.",
         });
         return;
       }
@@ -45,7 +45,7 @@ export function BusinessInsights() {
     } catch {
       setState({
         kind: "error",
-        message: "Consultor temporalmente fuera de línea. Intenta nuevamente en unos minutos.",
+        message: "Advisor temporarily offline. Please try again in a few minutes.",
       });
     }
   }, []);
@@ -53,13 +53,13 @@ export function BusinessInsights() {
   return (
     <div className={styles.wrapper}>
       <ChartCard
-        title="Bonzai Advisor"
-        description="Diagnóstico estratégico cruzando datos de todos los servicios"
+        title="BonzAI Advisor"
+        description="Strategic diagnosis cross-referencing data from all services"
       >
         {state.kind === "idle" && (
           <button onClick={handleGenerate} className={styles.trigger}>
             <span className={styles.sparkle}>✨</span>
-            Generar Diagnóstico de IA
+            Generate AI Diagnosis
           </button>
         )}
 
@@ -112,7 +112,7 @@ export function BusinessInsights() {
             </ul>
             {state.partial && (
               <p className={styles.partialNotice}>
-                Algunos servicios no estuvieron disponibles. El diagnóstico puede ser parcial.
+                Some services were unavailable. The diagnosis may be partial.
               </p>
             )}
             <button
@@ -121,7 +121,7 @@ export function BusinessInsights() {
               style={{ marginTop: "1rem" }}
             >
               <span className={styles.sparkle}>✨</span>
-              Regenerar Diagnóstico
+              Regenerate Diagnosis
             </button>
           </div>
         )}
@@ -138,7 +138,7 @@ export function BusinessInsights() {
               style={{ marginTop: "0.75rem" }}
             >
               <span className={styles.sparkle}>✨</span>
-              Reintentar
+              Retry
             </button>
           </div>
         )}

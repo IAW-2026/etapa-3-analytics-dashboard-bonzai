@@ -11,8 +11,6 @@ import type {
 } from "@/types/ai-advisor";
 import type { DeliveryStats } from "@/types/shipping";
 
-// ── Environment ──
-
 const BUYER_API_URL =
   process.env.BUYER_API_URL || "https://proyecto-c-buyer-bonzai.vercel.app";
 const BUYER_SERVICE_KEY = process.env.BUYER_SERVICE_KEY || "";
@@ -30,9 +28,7 @@ const PAYMENTS_API_URL =
 const PAYMENTS_ANALYTICS_KEY = process.env.PAYMENTS_ANALYTICS_KEY || "";
 
 const AI_PROVIDER_API_KEY = process.env.AI_PROVIDER_API_KEY || "";
-const AI_MODEL = process.env.AI_MODEL || "gpt-4o";
-
-// ── Individual fetchers ──
+const AI_MODEL = process.env.AI_MODEL || "gemini-2.5-flash";
 
 async function fetchBuyerOverview(): Promise<BuyerOverview | null> {
   const url = `${BUYER_API_URL.replace(/\/$/, "")}/api/analytics/buyers/overview`;
@@ -84,8 +80,6 @@ async function fetchPaymentDisputes(): Promise<PaymentDisputes | null> {
   return res.json();
 }
 
-// ── Context builder (modular for future endpoints) ──
-
 interface FetchResults {
   buyersOverview: BuyerOverview | null;
   cartsOverview: CartOverview | null;
@@ -122,34 +116,32 @@ function buildContext(results: FetchResults): ConsolidatedMetrics {
   };
 }
 
-// ── Gemini caller ──
+const SYSTEM_PROMPT = `You are Bonzai's senior strategic consultant for a botany-specialized marketplace. Your goal is to analyze this cross-service dataset from the ecosystem:
 
-const SYSTEM_PROMPT = `Eres el consultor estratégico senior de Bonzai, un marketplace especializado en botánica. Tu objetivo es analizar este conjunto de datos cruzados del ecosistema:
+1. Buyer App: checkout completion rates and cart abandonment.
+2. Seller App: global sales KPIs, revenue, products, and categories.
+3. Shipping App: delivery success rate, active shipments, and status distribution.
+4. Payments App: dispute metrics, conflicts, and disputed amounts.
 
-1. Buyer App: tasas de preparación de checkout y abandono de carritos.
-2. Seller App: KPIs globales de ventas, revenue, productos y categorías.
-3. Shipping App: tasa de éxito de entregas, envíos activos y distribución por estado.
-4. Payments App: métricas de disputas, conflictos y montos disputados.
+Identify 3 critical findings that are not obvious in isolation. Cross-reference data between services. For example:
+- Correlate cart abandonment (Buyer) with logistics delays (Shipping).
+- Link disputes in Payments with revenue by category or seller (Seller).
+- Connect delivery success rate (Shipping) with checkout conversion (Buyer).
 
-Debes identificar 3 hallazgos críticos que no sean evidentes de forma aislada. Cruza los datos entre servicios. Por ejemplo:
-- Correlaciona el abandono de carritos (Buyer) con demoras logísticas (Shipping).
-- Relaciona las disputas en Payments con el revenue por categoría o vendedor (Seller).
-- Conecta la tasa de éxito de entregas (Shipping) con la conversión de checkout (Buyer).
-
-Responde ÚNICAMENTE con un array JSON de 3 objetos. Cada objeto debe tener este formato exacto:
+Respond ONLY with a JSON array of 3 objects. Each object must use this exact format:
 {
-  "title": "Título breve y editorial del hallazgo",
-  "description": "Explicación elegante, breve y accionable del hallazgo (2-3 oraciones). Incluye datos concretos si están disponibles en las métricas.",
+  "title": "Brief, editorial headline for the finding",
+  "description": "Elegant, concise, actionable explanation (2-3 sentences). Include concrete data if available in the metrics.",
   "severity": "positive" | "warning" | "critical",
   "services_involved": ["Buyer", "Seller", "Shipping", "Payments"]
 }
 
-Reglas:
-- NO incluyas markdown, ni backticks, ni texto fuera del array JSON.
-- severity debe ser "positive" si es una oportunidad, "warning" si requiere atención, "critical" si es un riesgo.
-- services_involved debe listar los nombres de los servicios involucrados en el hallazgo.
-- Si algún servicio no está disponible, omite hallazgos que dependan exclusivamente de él.
-- Cada descripción debe tener MÁXIMO 2 oraciones. Sé directo y usa datos numéricos concretos de las métricas.`;
+Rules:
+- Do NOT include markdown, backticks, or any text outside the JSON array.
+- severity must be "positive" if an opportunity, "warning" if needs attention, "critical" if a risk.
+- services_involved must list the service names involved in the finding.
+- If any service is unavailable, omit findings that depend exclusively on it.
+- Each description must be a MAXIMUM of 2 sentences. Be direct and use concrete numeric data from the metrics.`;
 
 async function callGemini(context: ConsolidatedMetrics): Promise<AIInsight[]> {
   if (!AI_PROVIDER_API_KEY) {
@@ -229,11 +221,8 @@ async function callGemini(context: ConsolidatedMetrics): Promise<AIInsight[]> {
   return insights.slice(0, 3) as AIInsight[];
 }
 
-// ── Main exported Server Action ──
-
 export async function getAiInsights(): Promise<AIAdvisorResponse> {
   try {
-    // 1. Parallel fetch from all microservices
     const [buyersResult, cartsResult, sellerResult, shippingResult, paymentsResult] =
       await Promise.allSettled([
         fetchBuyerOverview(),
@@ -266,11 +255,10 @@ export async function getAiInsights(): Promise<AIAdvisorResponse> {
         insights: [],
         partial: true,
         error:
-          "Todos los servicios están temporalmente fuera de línea. Intenta nuevamente más tarde.",
+          "All services are temporarily offline. Please try again later.",
       };
     }
 
-    // 2. Build consolidated context (modular)
     const context = buildContext({
       buyersOverview,
       cartsOverview,
@@ -286,7 +274,6 @@ export async function getAiInsights(): Promise<AIAdvisorResponse> {
       deliveryStats &&
       paymentDisputes;
 
-    // 3. Call Gemini
     const insights = await callGemini(context);
 
     return {
@@ -295,12 +282,12 @@ export async function getAiInsights(): Promise<AIAdvisorResponse> {
     };
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "Error desconocido al generar insights";
+      err instanceof Error ? err.message : "Unknown error generating insights";
     console.error("[ai-advisor]", message);
     return {
       insights: [],
       partial: true,
-      error: "Consultor temporalmente fuera de línea. Intenta nuevamente en unos minutos.",
+      error: "Advisor temporarily offline. Please try again in a few minutes.",
     };
   }
 }
