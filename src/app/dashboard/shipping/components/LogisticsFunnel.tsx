@@ -29,9 +29,9 @@ function computeFunnel(stats: DeliveryStats): FunnelLevel[] {
   if (total === 0) return [];
 
   return [
-    { label: "Ingreso (Total)", value: total, percentage: 100, color: "var(--color-secondary)" },
-    { label: "En Proceso", value: inProcess, percentage: Math.round((inProcess / total) * 100), color: "var(--color-primary)" },
-    { label: "Exito (Delivered)", value: success, percentage: Math.round((success / total) * 100), color: "#03271a" },
+    { label: "Total Inflow", value: total, percentage: 100, color: "var(--color-secondary)" },
+    { label: "In Process", value: inProcess, percentage: Math.round((inProcess / total) * 100), color: "var(--color-primary)" },
+    { label: "Success (Delivered)", value: success, percentage: Math.round((success / total) * 100), color: "#03271a" },
   ];
 }
 
