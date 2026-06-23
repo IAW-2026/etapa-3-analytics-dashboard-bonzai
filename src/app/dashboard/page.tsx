@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { shippingApi } from "@/services/shipping";
 import type { DeliveryStats } from "@/types/shipping";
 import { Skeleton } from "@/components/ui/Skeleton/Skeleton";
+import { BusinessInsights } from "@/components/ai-advisor/BusinessInsights";
 import styles from "./page.module.css";
 
 function formatCurrency(n: number) {
@@ -215,6 +216,9 @@ export default function DashboardPage() {
           <p className={styles.placeholderText}>Could not load Shipping App data. Verify the API is running.</p>
         </div>
       )}
+
+      {/* ── AI Advisor ── */}
+      <BusinessInsights />
 
       {/* ── App navigation cards ── */}
       <h2 className={styles.sectionLabel} style={{ marginTop: "2rem" }}>
