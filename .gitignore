@@ -13,3 +13,6 @@ next-env.d.ts
 .clerk/
 # Archivos de sistema
 .DS_Store
+
+# Harness
+.atl
