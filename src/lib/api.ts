@@ -42,8 +42,8 @@ export const api = {
     request<any>(`/api/admin/analytics/reviews?${new URLSearchParams({ ...(from && { from }), ...(to && { to }) }).toString()}`),
   getAnalyticsReservations: (from?: string, to?: string) =>
     request<any>(`/api/admin/analytics/reservations?${new URLSearchParams({ ...(from && { from }), ...(to && { to }) }).toString()}`),
-  getTopProducts: (limit?: number) =>
-    request<any>(`/api/admin/analytics/products/top?limit=${limit || 10}`),
-  getTopSellers: (limit?: number) =>
-    request<any>(`/api/admin/analytics/sellers/top?limit=${limit || 10}`),
+  getTopProducts: (limit?: number, from?: string, to?: string) =>
+    request<any>(`/api/admin/analytics/products/top?${new URLSearchParams({ limit: String(limit || 10), ...(from && { from }), ...(to && { to }) }).toString()}`),
+  getTopSellers: (limit?: number, from?: string, to?: string) =>
+    request<any>(`/api/admin/analytics/sellers/top?${new URLSearchParams({ limit: String(limit || 10), ...(from && { from }), ...(to && { to }) }).toString()}`),
 };

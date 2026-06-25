@@ -51,6 +51,9 @@ export default function SellerAnalyticsPage() {
   const [ordersData, setOrdersData] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any>(null);
   const [reservations, setReservations] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [topProductsData, setTopProductsData] = useState<any[]>([]);
+  const [topSellersData, setTopSellersData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -64,15 +67,25 @@ export default function SellerAnalyticsPage() {
       api.getAnalyticsOrders(from, to, groupBy),
       api.getAnalyticsReviews(from, to),
       api.getAnalyticsReservations(from, to),
+      api.getAnalyticsCategories(from, to),
+      api.getTopProducts(10, from, to),
+      api.getTopSellers(10, from, to),
     ])
-      .then(([s, rev, ord, rvw, res]) => {
+      .then(([s, rev, ord, rvw, res, cat, topProds, topSells]) => {
         setStats(s);
         setRevenueData(rev.revenue?.map((d: any) => ({ ...d, month: d.period })) || []);
         setOrdersData(ord.orders?.map((d: any) => ({ ...d, month: d.period })) || []);
         setReviews(rvw);
         setReservations(res);
+        setCategories(cat?.categories || []);
+        setTopProductsData(topProds?.products || []);
+        setTopSellersData(topSells?.sellers || []);
       })
-      .catch(() => { setStats(null); setRevenueData([]); setOrdersData([]); setReviews(null); setReservations(null); })
+      .catch(() => {
+        setStats(null); setRevenueData([]); setOrdersData([]);
+        setReviews(null); setReservations(null);
+        setCategories([]); setTopProductsData([]); setTopSellersData([]);
+      })
       .finally(() => setLoading(false));
   }, [from, to, groupBy]);
 
@@ -96,6 +109,18 @@ export default function SellerAnalyticsPage() {
   }, [from, to, groupBy]);
 
   const s = stats?.summary || {};
+
+  const totalOrdersFiltered = ordersData.reduce((sum, d) => sum + (d.total || 0), 0);
+  const totalRevenueFiltered = revenueData.reduce((sum, d) => sum + (d.revenue || 0), 0);
+  const totalReservationsFiltered = reservations?.metrics?.total;
+  const conversionRateFiltered = reservations?.metrics?.conversionRate;
+
+  const hasAnyData = (n: number | undefined | null) => (n ?? 0) > 0;
+  const hasFilteredData = hasAnyData(s.totalSellers) || hasAnyData(s.totalProducts)
+    || revenueData.length > 0 || ordersData.length > 0
+    || categories.length > 0 || topProductsData.length > 0 || topSellersData.length > 0
+    || Object.values(reviews?.metrics?.distribution || {}).some((v) => (v as number) > 0)
+    || hasAnyData(reservations?.metrics?.total);
 
   const statusTotals = ordersData ? ordersData.reduce((acc: any, o: any) => {
     acc.pending = (acc.pending || 0) + (o.pending || 0);
@@ -137,12 +162,12 @@ export default function SellerAnalyticsPage() {
             rows={[
               ["Sellers", String(s.totalSellers ?? "")],
               ["Products", String(s.totalProducts ?? "")],
-              ["Orders", String(s.totalOrders ?? "")],
-              ["Revenue", formatCurrency(s.totalRevenue ?? 0)],
+              ["Orders", String((totalOrdersFiltered || s.totalOrders) ?? "")],
+              ["Revenue", formatCurrency((totalRevenueFiltered || s.totalRevenue) ?? 0)],
               ["Avg Rating", String(s.averageRating ?? "")],
-              ["Reservations", String(s.totalReservations ?? "")],
+              ["Reservations", String(totalReservationsFiltered ?? s.totalReservations ?? "")],
               ["Buyers", String(s.uniqueBuyers ?? "")],
-              ["Conversion Rate", s.reservationConversionRate != null ? `${s.reservationConversionRate}%` : ""],
+              ["Conversion Rate", conversionRateFiltered != null ? `${conversionRateFiltered}%` : s.reservationConversionRate != null ? `${s.reservationConversionRate}%` : ""],
             ]}
             label="Export CSV"
             disabled={loading || !stats}
@@ -187,6 +212,11 @@ export default function SellerAnalyticsPage() {
         </>
       ) : !stats ? (
         <div className={styles.empty}>Could not load Seller App data. Verify the API is running and NEXT_PUBLIC_API_URL is correct.</div>
+      ) : !hasFilteredData ? (
+        <div className={styles.empty}>
+          <p>No data available for the selected date range.</p>
+          <small>Try selecting a different date range.</small>
+        </div>
       ) : (
         <>
           <div className={styles.statGrid}>
@@ -200,15 +230,15 @@ export default function SellerAnalyticsPage() {
           <span className={styles.statValue}>{s.totalProducts ?? "—"}</span>
           <span className={styles.statLabel}>Products</span>
         </div>
-        <div className={styles.statCard}>
+          <div className={styles.statCard}>
           <ShoppingCart size={16} className={styles.statIcon} />
-          <span className={styles.statValue}>{s.totalOrders ?? "—"}</span>
+          <span className={styles.statValue}>{(totalOrdersFiltered || s.totalOrders) ?? "—"}</span>
           <span className={styles.statLabel}>Orders</span>
           {ordChange && <span className={ordChange.startsWith("+") ? styles.changeUp : styles.changeDown}>{ordChange}</span>}
         </div>
         <div className={styles.statCard}>
           <DollarSign size={16} className={styles.statIcon} />
-          <span className={styles.statValue}>{s.totalRevenue != null ? formatCurrency(s.totalRevenue) : "—"}</span>
+          <span className={styles.statValue}>{totalRevenueFiltered ? formatCurrency(totalRevenueFiltered) : s.totalRevenue != null ? formatCurrency(s.totalRevenue) : "—"}</span>
           <span className={styles.statLabel}>Revenue</span>
           {revChange && <span className={revChange.startsWith("+") ? styles.changeUp : styles.changeDown}>{revChange}</span>}
         </div>
@@ -219,7 +249,7 @@ export default function SellerAnalyticsPage() {
         </div>
         <div className={styles.statCard}>
           <BookMarked size={16} className={styles.statIcon} />
-          <span className={styles.statValue}>{s.totalReservations ?? "—"}</span>
+          <span className={styles.statValue}>{totalReservationsFiltered ?? s.totalReservations ?? "—"}</span>
           <span className={styles.statLabel}>Reservations</span>
         </div>
         <div className={styles.statCard}>
@@ -229,7 +259,7 @@ export default function SellerAnalyticsPage() {
         </div>
         <div className={`${styles.statCard} ${styles.statCardWarning}`}>
           <TrendingUp size={16} className={styles.statIconWarning} />
-          <span className={styles.statValueWarning}>{s.reservationConversionRate != null ? `${s.reservationConversionRate}%` : "—"}</span>
+          <span className={styles.statValueWarning}>{conversionRateFiltered != null ? `${conversionRateFiltered}%` : s.reservationConversionRate != null ? `${s.reservationConversionRate}%` : "—"}</span>
           <span className={styles.statLabel}>Conversion</span>
         </div>
       </div>
@@ -278,15 +308,15 @@ export default function SellerAnalyticsPage() {
 
       <ErrorBoundary>
         <div className={styles.chartGrid}>
-          {(stats.topCategories || []).length > 0 && (
+          {categories.length > 0 && (
             <ChartCard title="Revenue by Category" description="Top categories by revenue" tall>
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
-                  <Pie data={stats.topCategories.slice(0, 8)} dataKey="revenue" nameKey="name"
+                  <Pie data={categories.slice(0, 8)} dataKey="revenue" nameKey="name"
                     cx="50%" cy="50%" outerRadius={90} innerRadius={50}
                     label={({ percent }: any) => `${((percent || 0) * 100).toFixed(0)}%`}
                     labelLine={false}>
-                    {(stats.topCategories.slice(0, 8) as any[]).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    {categories.slice(0, 8).map((_: any, i: number) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip formatter={(v: any) => formatCurrency(v)} contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
                 </PieChart>
@@ -314,11 +344,12 @@ export default function SellerAnalyticsPage() {
               </div>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={statusData} dataKey="value" nameKey="name"
+                  <Pie data={statusData.filter((d) => d.value > 0)} dataKey="value" nameKey="name"
                     cx="50%" cy="50%" outerRadius={80} innerRadius={45}
-                    label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                    labelLine={false}>
-                    {statusData.map((d: any) => <Cell key={d.name} fill={d.color} />)}
+                    label={({ percent }: any) => `${((percent || 0) * 100).toFixed(0)}%`}
+                    labelLine={true}
+                    fontSize={10}>
+                    {statusData.filter((d) => d.value > 0).map((d: any) => <Cell key={d.name} fill={d.color} />)}
                   </Pie>
                   <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
                 </PieChart>
@@ -347,6 +378,8 @@ export default function SellerAnalyticsPage() {
 
       <ErrorBoundary>
         {reservations?.metrics && (
+          <>
+          <h3 className={styles.sectionTitle}>Reservations</h3>
           <div className={styles.resGrid}>
             <div className={styles.resCard}>
               <span className={styles.resValue}>{reservations.metrics.total}</span>
@@ -373,15 +406,16 @@ export default function SellerAnalyticsPage() {
               <span className={styles.resLabel}>Conversion Rate</span>
             </div>
           </div>
+          </>
         )}
       </ErrorBoundary>
 
       <ErrorBoundary>
         <div className={styles.chartGrid}>
-          {(stats.topProducts || []).length > 0 && (
+          {topProductsData.length > 0 && (
             <ChartCard title="Top Products" description="Best-selling products by revenue" tall>
               <div className={styles.rankList}>
-                {stats.topProducts.slice(0, 8).map((p: any, i: number) => (
+                {topProductsData.slice(0, 8).map((p: any, i: number) => (
                   <div key={i} className={styles.rankRow}>
                     <span className={styles.rankBadge}>{i + 1}</span>
                     <div className={styles.rankInfo}>
@@ -395,10 +429,10 @@ export default function SellerAnalyticsPage() {
             </ChartCard>
           )}
 
-          {(stats.topSellers || []).length > 0 && (
+          {topSellersData.length > 0 && (
             <ChartCard title="Top Sellers" description="Sellers with highest revenue" tall>
               <div className={styles.rankList}>
-                {stats.topSellers.slice(0, 8).map((s: any, i: number) => (
+                {topSellersData.slice(0, 8).map((s: any, i: number) => (
                   <div key={i} className={styles.rankRow}>
                     <span className={styles.rankBadge}>{i + 1}</span>
                     <div className={styles.rankInfo}>
