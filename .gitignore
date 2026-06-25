@@ -1,0 +1,18 @@
+*.local
+/docs
+*.tsbuildinfo
+node_modules/
+.next/
+out/
+build/
+next-env.d.ts
+
+# Archivos de entorno y configuración
+.env*.local
+.env
+.clerk/
+# Archivos de sistema
+.DS_Store
+
+# Harness
+.atl

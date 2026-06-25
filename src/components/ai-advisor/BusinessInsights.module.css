@@ -1,0 +1,156 @@
+.wrapper {
+  margin-top: 1.5rem;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: #f8f7f2;
+  background: #03271a;
+  border: 1px solid #03271a;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.trigger:hover:not(:disabled) {
+  background: #052e20;
+  box-shadow: var(--shadow-md);
+}
+
+.trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sparkle {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.skeletonGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.skeletonLine {
+  height: 1rem;
+  border-radius: var(--radius-sm);
+  animation: shimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, #e8ece9 25%, #f0f3f1 50%, #e8ece9 75%);
+  background-size: 200% 100%;
+}
+
+.skeletonLine:first-child {
+  width: 90%;
+  height: 1.2rem;
+}
+
+.skeletonLine:nth-child(2) {
+  width: 100%;
+}
+
+.skeletonLine:nth-child(3) {
+  width: 75%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.insightsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.insightItem {
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--color-border);
+  background: rgba(3, 39, 26, 0.025);
+}
+
+.insightItem.positive {
+  border-left-color: #526347;
+  background: rgba(82, 99, 71, 0.05);
+}
+
+.insightItem.warning {
+  border-left-color: #d4a853;
+  background: rgba(212, 168, 83, 0.06);
+}
+
+.insightItem.critical {
+  border-left-color: #dc2626;
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.insightTitle {
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #03271a;
+  margin: 0 0 0.3rem;
+}
+
+.insightDescription {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0 0 0.4rem;
+}
+
+.insightServices {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.serviceTag {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--color-border);
+  color: #526347;
+  background: white;
+}
+
+.errorMessage {
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.errorIcon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+
+.partialNotice {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
