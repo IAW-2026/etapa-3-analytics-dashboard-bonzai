@@ -8,7 +8,7 @@
 
 | Email | Rol |
 |---|---|
-| `seller_admin+clerk_test@iaw.com` | Administrador |
+| `super_admin+clerk_test@iaw.com` | Administrador (`super_admin`) |
 
 Contraseña: `iawuser#`
 
