@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Store, CreditCard, Users, Truck, TrendingUp, ShoppingCart, DollarSign, Package, Star, AlertTriangle, Wallet, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Store, CreditCard, Users, Truck, TrendingUp, ShoppingCart, DollarSign, Package, Star, AlertTriangle, Wallet, CheckCircle, XCircle, Clock, Home } from "lucide-react";
 import { api } from "@/lib/api";
 import { shippingApi } from "@/services/shipping";
 import type { DeliveryStats } from "@/types/shipping";
@@ -18,9 +18,23 @@ function formatARS(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 }
 
+function formatRate(n: number) {
+  return `${(n * 100).toFixed(1)}%`;
+}
+
+type BuyerOverviewStats = {
+  totalBuyers: number | null;
+  checkoutReadinessRate: number | null;
+  buyersWithShippingAddress: number | null;
+  buyersWithCartItems: number | null;
+  activeCarts: number | null;
+  abandonedCarts: number | null;
+};
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [paymentsStats, setPaymentsStats] = useState<any>(null);
+  const [buyerStats, setBuyerStats] = useState<BuyerOverviewStats | null>(null);
   const [shippingStats, setShippingStats] = useState<DeliveryStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,11 +45,15 @@ export default function DashboardPage() {
       fetch("/api/payments/overview")
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
+      fetch("/api/buyer/overview")
+        .then((res) => (res.ok ? res.json() : null))
+        .catch(() => null),
       shippingApi.getDeliveryStats().catch(() => null),
     ])
-      .then(([s, p, sh]) => {
+      .then(([s, p, b, sh]) => {
         setStats(s);
         setPaymentsStats(p);
+        setBuyerStats(b);
         setShippingStats(sh);
       })
       .finally(() => setLoading(false));
@@ -160,9 +178,54 @@ export default function DashboardPage() {
       <h2 className={styles.sectionLabel} style={{ marginTop: "1.5rem" }}>
         <Users size={14} /> Buyer App
       </h2>
-      <div className={styles.placeholderCard}>
-        <p className={styles.placeholderText}>Coming soon — integrate the Buyer App API to see user behavior metrics.</p>
-      </div>
+      {loading ? (
+        <div className={styles.statGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className={styles.statCard}>
+              <Skeleton width={14} height={14} className={styles.statIcon} />
+              <Skeleton width={80} height={20} />
+              <Skeleton width={60} height={10} className={styles.statLabel} />
+            </div>
+          ))}
+        </div>
+      ) : buyerStats ? (
+        <div className={styles.statGrid}>
+          <div className={styles.statCard}>
+            <Users size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{buyerStats.totalBuyers?.toLocaleString() ?? "—"}</span>
+            <span className={styles.statLabel}>Buyers</span>
+          </div>
+          <div className={styles.statCard}>
+            <CheckCircle size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{buyerStats.checkoutReadinessRate != null ? formatRate(buyerStats.checkoutReadinessRate) : "—"}</span>
+            <span className={styles.statLabel}>Checkout Ready</span>
+          </div>
+          <div className={styles.statCard}>
+            <Home size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{buyerStats.buyersWithShippingAddress?.toLocaleString() ?? "—"}</span>
+            <span className={styles.statLabel}>With Address</span>
+          </div>
+          <div className={styles.statCard}>
+            <ShoppingCart size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{buyerStats.buyersWithCartItems?.toLocaleString() ?? "—"}</span>
+            <span className={styles.statLabel}>With Cart Items</span>
+          </div>
+          <div className={styles.statCard}>
+            <ShoppingCart size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{buyerStats.activeCarts?.toLocaleString() ?? "—"}</span>
+            <span className={styles.statLabel}>Active Carts</span>
+          </div>
+          <div className={styles.statCard}>
+            <Clock size={14} className={styles.statIcon} />
+            <span className={styles.statValue}>{buyerStats.abandonedCarts?.toLocaleString() ?? "—"}</span>
+            <span className={styles.statLabel}>Abandoned Carts</span>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.placeholderCard}>
+          <p className={styles.placeholderText}>Could not load Buyer App data. Verify the API is running.</p>
+        </div>
+      )}
 
       {/* ── Shipping App section ── */}
       <h2 className={styles.sectionLabel} style={{ marginTop: "1.5rem" }}>

@@ -126,6 +126,89 @@
   flex-shrink: 0;
 }
 
+.dateFilterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.dateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.filterLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.dateInput {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  color: var(--color-text);
+  background: white;
+}
+
+.dateInput:focus {
+  border-color: var(--color-primary);
+}
+
+.dateInput:disabled {
+  opacity: 0.5;
+}
+
+.groupToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.toggleBtn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.toggleBtn:hover:not(:disabled) {
+  background: var(--color-neutral-dark);
+  color: var(--color-text);
+}
+
+.toggleBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggleActive {
+  background: var(--color-primary);
+  color: white;
+}
+
+.toggleActive:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+  color: white;
+}
+
 .filterBar {
   display: flex;
   flex-wrap: wrap;

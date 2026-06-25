@@ -15,6 +15,11 @@ export type BuyerAnalyticsFilters = {
   inactiveDays: number;
 };
 
+export type DateRangeResponse = {
+  from: string | null;
+  to: string | null;
+};
+
 export type BuyerSummary = {
   rowId: string;
   displayName: string;
@@ -26,7 +31,7 @@ export type CartBuyerSummary = {
   displayName: string;
 };
 
-export type BuyerOverview = {
+export type BuyerOverview = DateRangeResponse & {
   totalBuyers: number;
   buyersWithCompleteProfile: number;
   buyersWithShippingAddress: number;
@@ -42,7 +47,7 @@ export type BuyerDateBucket = {
   count: number;
 };
 
-export type PaginatedBuyerAnalytics<T> = {
+export type PaginatedBuyerAnalytics<T> = DateRangeResponse & {
   page: number;
   take: number;
   total: number;
@@ -50,12 +55,10 @@ export type PaginatedBuyerAnalytics<T> = {
 };
 
 export type NewBuyersAnalytics = PaginatedBuyerAnalytics<BuyerSummary> & {
-  from: string | null;
-  to: string | null;
   buckets: BuyerDateBucket[];
 };
 
-export type CartOverview = {
+export type CartOverview = DateRangeResponse & {
   totalCarts: number;
   activeCarts: number;
   emptyCarts: number;
@@ -74,7 +77,7 @@ export type CartSummary = {
   buyer: CartBuyerSummary | null;
 };
 
-export type PaginatedCartAnalytics = {
+export type PaginatedCartAnalytics = DateRangeResponse & {
   page: number;
   take: number;
   total: number;
@@ -86,7 +89,7 @@ export type AbandonedCartAnalytics = PaginatedCartAnalytics & {
   cutoff: string;
 };
 
-export type AverageCartItems = {
+export type AverageCartItems = DateRangeResponse & {
   totalCarts: number;
   activeCarts: number;
   averageDistinctItemsAcrossAllCarts: number;
@@ -102,7 +105,7 @@ export type TopCartProduct = {
   lineCount: number;
 };
 
-export type TopCartProductsAnalytics = {
+export type TopCartProductsAnalytics = DateRangeResponse & {
   limit: number;
   products: TopCartProduct[];
 };
@@ -118,7 +121,7 @@ export type AddressDistributionPoint = {
   count: number;
 };
 
-export type ShippingAddressOverview = {
+export type ShippingAddressOverview = DateRangeResponse & {
   totalAddresses: number;
   totalBuyers: number;
   buyersWithAddress: number;
@@ -129,15 +132,15 @@ export type ShippingAddressOverview = {
   topProvince: AddressDistributionPoint | null;
 };
 
-export type ShippingAddressesByCity = {
+export type ShippingAddressesByCity = DateRangeResponse & {
   cities: AddressDistributionPoint[];
 };
 
-export type ShippingAddressesByProvince = {
+export type ShippingAddressesByProvince = DateRangeResponse & {
   provinces: AddressDistributionPoint[];
 };
 
-export type ShippingAddressCompleteness = {
+export type ShippingAddressCompleteness = DateRangeResponse & {
   totalAddresses: number;
   completeRequiredFields: number;
   incompleteRequiredFields: number;

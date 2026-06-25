@@ -122,14 +122,14 @@ export default function PaymentsAnalyticsPage() {
     const dateParams = { from, to };
 
     Promise.all([
-      paymentsApi<any>("overview"),
+      paymentsApi<any>("overview", dateParams),
       paymentsApi<any>("revenue", { ...dateParams, interval }),
       paymentsApi<any>("commissions", { ...dateParams, interval }),
       paymentsApi<any>("transactions", { ...dateParams, groupBy: "status" }),
       paymentsApi<any>("transactions", { ...dateParams, groupBy: "day" }),
       paymentsApi<any>("disputes", dateParams),
       paymentsApi<any>("sellers/top", { limit: "10", ...dateParams }),
-      paymentsApi<any>("wallets"),
+      paymentsApi<any>("wallets", dateParams),
     ])
       .then(([ov, rev, comm, txSt, txD, disp, sellers, wall]) => {
         setOverview(ov);

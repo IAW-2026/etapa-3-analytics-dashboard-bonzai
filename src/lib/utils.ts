@@ -153,6 +153,7 @@ export function isAbortError(error: unknown) {
 export function normalizeBuyerOverview(payload: unknown): BuyerOverview {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     totalBuyers: toNonNegativeInteger(record.totalBuyers),
     buyersWithCompleteProfile: toNonNegativeInteger(
       record.buyersWithCompleteProfile,
@@ -172,10 +173,9 @@ export function normalizeBuyerOverview(payload: unknown): BuyerOverview {
 export function normalizeNewBuyers(payload: unknown): NewBuyersAnalytics {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     ...normalizePagination(record),
     buyers: toArray(record.buyers).map(normalizeBuyerSummary),
-    from: toNullableString(record.from),
-    to: toNullableString(record.to),
     buckets: toArray(record.buckets).map(normalizeBuyerDateBucket),
   };
 }
@@ -185,6 +185,7 @@ export function normalizePaginatedBuyers(
 ): PaginatedBuyerAnalytics<BuyerSummary> {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     ...normalizePagination(record),
     buyers: toArray(record.buyers).map(normalizeBuyerSummary),
   };
@@ -193,6 +194,7 @@ export function normalizePaginatedBuyers(
 export function normalizeCartOverview(payload: unknown): CartOverview {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     totalCarts: toNonNegativeInteger(record.totalCarts),
     activeCarts: toNonNegativeInteger(record.activeCarts),
     emptyCarts: toNonNegativeInteger(record.emptyCarts),
@@ -210,6 +212,7 @@ export function normalizePaginatedCarts(
 ): PaginatedCartAnalytics {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     ...normalizePagination(record),
     carts: toArray(record.carts).map(normalizeCartSummary),
   };
@@ -229,6 +232,7 @@ export function normalizeAbandonedCarts(
 export function normalizeAverageCartItems(payload: unknown): AverageCartItems {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     totalCarts: toNonNegativeInteger(record.totalCarts),
     activeCarts: toNonNegativeInteger(record.activeCarts),
     averageDistinctItemsAcrossAllCarts: toNonNegativeNumber(
@@ -251,6 +255,7 @@ export function normalizeTopCartProducts(
 ): TopCartProductsAnalytics {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     limit: toNonNegativeInteger(record.limit),
     products: toArray(record.products).map(normalizeTopCartProduct),
   };
@@ -259,6 +264,7 @@ export function normalizeTopCartProducts(
 export function normalizeCartsByBuyer(payload: unknown): CartsByBuyerAnalytics {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     ...normalizePagination(record),
     buyers: toArray(record.buyers).map(normalizeBuyerCartSummary),
   };
@@ -269,6 +275,7 @@ export function normalizeShippingAddressOverview(
 ): ShippingAddressOverview {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     totalAddresses: toNonNegativeInteger(record.totalAddresses),
     totalBuyers: toNonNegativeInteger(record.totalBuyers),
     buyersWithAddress: toNonNegativeInteger(record.buyersWithAddress),
@@ -289,6 +296,7 @@ export function normalizeShippingAddressesByCity(
 ): ShippingAddressesByCity {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     cities: toArray(record.cities).map(normalizeDistributionPoint),
   };
 }
@@ -298,6 +306,7 @@ export function normalizeShippingAddressesByProvince(
 ): ShippingAddressesByProvince {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     provinces: toArray(record.provinces).map(normalizeDistributionPoint),
   };
 }
@@ -307,6 +316,7 @@ export function normalizeShippingAddressCompleteness(
 ): ShippingAddressCompleteness {
   const record = asRecord(payload);
   return {
+    ...normalizeDateRange(record),
     totalAddresses: toNonNegativeInteger(record.totalAddresses),
     completeRequiredFields: toNonNegativeInteger(record.completeRequiredFields),
     incompleteRequiredFields: toNonNegativeInteger(
@@ -429,6 +439,14 @@ export function normalizePagination(value: unknown) {
     page: toPositiveInteger(record.page, 1),
     take: toNonNegativeInteger(record.take),
     total: toNonNegativeInteger(record.total),
+  };
+}
+
+export function normalizeDateRange(value: unknown) {
+  const record = asRecord(value);
+  return {
+    from: toNullableString(record.from),
+    to: toNullableString(record.to),
   };
 }
 

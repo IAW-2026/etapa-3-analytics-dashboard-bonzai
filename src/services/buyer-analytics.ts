@@ -34,11 +34,11 @@ export async function getBuyerAnalyticsSnapshot(
   }
 
   const config = configResult.config;
-  const buyerListParams = { page: "1", take: "5" };
-  const cartListParams = { page: "1", take: "5" };
+  const dateParams = { from: filters.from, to: filters.to };
+  const buyerListParams = { ...dateParams, page: "1", take: "5" };
+  const cartListParams = { ...dateParams, page: "1", take: "5" };
   const newBuyerParams = {
-    from: filters.from,
-    to: filters.to,
+    ...dateParams,
     page: "1",
     take: "8",
   };
@@ -63,7 +63,7 @@ export async function getBuyerAnalyticsSnapshot(
     shippingAddressesByProvince,
     shippingAddressCompleteness,
   ] = await Promise.all([
-    loadEndpoint(config, "buyers overview", "/api/analytics/buyers/overview", normalizeBuyerOverview),
+    loadEndpoint(config, "buyers overview", "/api/analytics/buyers/overview", normalizeBuyerOverview, dateParams),
     loadEndpoint(config, "new buyers", "/api/analytics/buyers/new", normalizeNewBuyers, newBuyerParams),
     loadEndpoint(
       config,
@@ -80,12 +80,14 @@ export async function getBuyerAnalyticsSnapshot(
       buyerListParams,
     ),
     loadEndpoint(config, "carts overview", "/api/analytics/carts/overview", normalizeCartOverview, {
+      ...dateParams,
       inactiveDays: String(filters.inactiveDays),
     }),
     loadEndpoint(config, "active carts", "/api/analytics/carts/active", normalizePaginatedCarts, cartListParams),
     loadEndpoint(config, "abandoned carts", "/api/analytics/carts/abandoned", normalizeAbandonedCarts, abandonedParams),
-    loadEndpoint(config, "average cart items", "/api/analytics/carts/average-items", normalizeAverageCartItems),
+    loadEndpoint(config, "average cart items", "/api/analytics/carts/average-items", normalizeAverageCartItems, dateParams),
     loadEndpoint(config, "top cart products", "/api/analytics/carts/top-products", normalizeTopCartProducts, {
+      ...dateParams,
       limit: "10",
     }),
     loadEndpoint(config, "carts by buyer", "/api/analytics/carts/by-buyer", normalizeCartsByBuyer, cartListParams),
@@ -94,24 +96,28 @@ export async function getBuyerAnalyticsSnapshot(
       "shipping address overview",
       "/api/analytics/shipping-addresses/overview",
       normalizeShippingAddressOverview,
+      dateParams,
     ),
     loadEndpoint(
       config,
       "shipping addresses by city",
       "/api/analytics/shipping-addresses/by-city",
       normalizeShippingAddressesByCity,
+      dateParams,
     ),
     loadEndpoint(
       config,
       "shipping addresses by province",
       "/api/analytics/shipping-addresses/by-province",
       normalizeShippingAddressesByProvince,
+      dateParams,
     ),
     loadEndpoint(
       config,
       "shipping address completeness",
       "/api/analytics/shipping-addresses/completeness",
       normalizeShippingAddressCompleteness,
+      dateParams,
     ),
   ]);
 
@@ -221,4 +227,3 @@ function getBuyerServiceConfig(): ConfigResult {
 
   return { ok: true, config: { baseUrl, serviceKey } };
 }
-
