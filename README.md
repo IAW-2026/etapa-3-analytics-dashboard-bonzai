@@ -21,7 +21,7 @@ Contraseña: `iawuser#`
 3. Ver analytics detallados del Seller App en `/dashboard/seller`: filtros por fecha (desde/hasta), agrupación por día/semana/mes, gráficos de ingresos y órdenes, breakdown por estado, top productos, top vendedores, distribución de reseñas y métricas de reservas.
 4. Explorar Payments App en `/dashboard/payments`: volumen de transacciones, comisiones, disputas, billeteras activas y gráficos de estado.
  5. Explorar Buyer App en `/dashboard/buyer`: overview de compradores (totales, nuevos, con/sin dirección), carritos (activos, abandonados, promedio de items, top productos), direcciones de envío (por ciudad, provincia, completitud). Filtrar por rango de fechas y días de inactividad.
- 6. Explorar Shipping App en `/dashboard/shipping`: envíos activos, tasa de éxito, tabla de envíos con filtros y mapa de calor de actividad.
+ 6. Explorar Shipping App en `/dashboard/shipping`: filtro por fecha (desde/hasta) y granularidad (día/semana/mes), tarjetas de envíos totales/activos/éxito/cancelados, gráfico de evolución temporal por estado, distribución por tipo de envío, breakdown por estado, funnel logístico, feed de actividad y tabla de envíos con búsqueda, filtro por estado y paginación.
  7. Exportar datos a CSV desde cualquier gráfico o sección.
 
 ---
@@ -86,11 +86,36 @@ El frontend está desarrollado con Next.js 16 App Router, los gráficos usan Rec
 ### Shipping Analytics (`/dashboard/shipping`)
 | App | Endpoint | Qué muestra |
 |---|---|---|
-| Shipping | `GET /api/analytics/delivery-stats` | Estadísticas de entrega |
-| Shipping | `GET /api/admin/shipments` | Tabla de envíos con filtros |
-| Shipping | `GET /api/analytics/recent-activity` | Feed de actividad reciente |
-| Shipping | `GET /api/analytics/delivery-heatmap` | Mapa de calor por hora/día |
-| Shipping | `GET /api/admin/shipments/incidents` | Incidentes de envío |
+| Shipping | `GET /api/analytics/delivery-stats?from=&to=&granularity=` | Totales, tasa de éxito, breakdown por estado y períodos agrupados (día/semana/mes) |
+| Shipping | `GET /api/admin/shipments?from=&to=&status=&q=` | Tabla de envíos con búsqueda, filtro por estado y paginación |
+| Shipping | `GET /api/analytics/shipments-by-type?from=&to=` | Distribución por tipo de envío |
+| Shipping | `GET /api/analytics/recent-activity?from=&to=` | Feed de actividad reciente y mapa de calor |
+
+---
+
+## Bonzai Advisor
+
+El **Bonzai Advisor** es un módulo de inteligencia artificial en el dashboard general (`/dashboard`) que genera un diagnóstico estratégico cruzando datos de los cuatro servicios del ecosistema Bonzai.
+
+### Cómo funciona
+
+1. **Recolección**: el backend obtiene métricas de Buyer, Seller, Shipping y Payments en paralelo vía `Promise.allSettled`.
+2. **Análisis**: los datos se consolidan y se envían a **Google Gemini** (`gemini-2.5-flash`) con un prompt que instruye al modelo a correlacionar información entre servicios (ej: abandono de carritos vs. demoras logísticas, disputas vs. revenue por categoría).
+3. **Respuesta**: Gemini devuelve 3 hallazgos críticos en formato JSON, cada uno con título, descripción, severidad (`positive`, `warning`, `critical`) y servicios involucrados.
+
+### Uso
+
+- Hacer clic en **"Generate AI Diagnosis"** desde la tarjeta Bonzai Advisor en `/dashboard`.
+- Los resultados se muestran con color según severidad (verde = oportunidad, dorado = atención, rojo = crítico).
+- El botón **"Regenerate Diagnosis"** permite re-ejecutar el análisis.
+
+### Limitaciones
+
+- **Dependencia de servicios externos**: si uno o más servicios no responden, el diagnóstico será **parcial** y se indicará con un aviso. Si todos fallan, el advisor no estará disponible.
+- **Respuestas no determinísticas**: Gemini puede generar hallazgos distintos en cada ejecución aunque los datos no hayan cambiado.
+- **Sin memoria ni historial**: cada diagnóstico es independiente. No compara con ejecuciones anteriores ni detecta tendencias a largo plazo.
+- **Alucinaciones**: el modelo puede inferir correlaciones espurias o mencionar datos inexactos si las métricas son insuficientes.
+- **Rate limits de la API de Gemini**: la key gratuita de Google AI Studio tiene límites de cuota que pueden degradar la disponibilidad bajo uso intensivo.
 
 ---
 
