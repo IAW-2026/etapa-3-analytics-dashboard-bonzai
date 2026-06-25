@@ -111,7 +111,7 @@ export default function SellerAnalyticsPage() {
   const s = stats?.summary || {};
 
   const totalOrdersFiltered = ordersData.reduce((sum, d) => sum + (d.total || 0), 0);
-  const totalRevenueFiltered = revenueData.reduce((sum, d) => sum + (d.revenue || 0), 0);
+  const totalRevenueFiltered = s.totalRevenue;
   const totalReservationsFiltered = reservations?.metrics?.total;
   const conversionRateFiltered = reservations?.metrics?.conversionRate;
 
