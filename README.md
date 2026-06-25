@@ -20,8 +20,9 @@ Contraseña: `iawuser#`
 2. Explorar el dashboard general en `/dashboard`: tarjetas con métricas consolidadas de Seller, Payments y Shipping.
 3. Ver analytics detallados del Seller App en `/dashboard/seller`: filtros por fecha (desde/hasta), agrupación por día/semana/mes, gráficos de ingresos y órdenes, breakdown por estado, top productos, top vendedores, distribución de reseñas y métricas de reservas.
 4. Explorar Payments App en `/dashboard/payments`: volumen de transacciones, comisiones, disputas, billeteras activas y gráficos de estado.
-5. Explorar Shipping App en `/dashboard/shipping`: envíos activos, tasa de éxito, tabla de envíos con filtros y mapa de calor de actividad.
-6. Exportar datos a CSV desde cualquier gráfico o sección.
+ 5. Explorar Buyer App en `/dashboard/buyer`: overview de compradores (totales, nuevos, con/sin dirección), carritos (activos, abandonados, promedio de items, top productos), direcciones de envío (por ciudad, provincia, completitud). Filtrar por rango de fechas y días de inactividad.
+ 6. Explorar Shipping App en `/dashboard/shipping`: envíos activos, tasa de éxito, tabla de envíos con filtros y mapa de calor de actividad.
+ 7. Exportar datos a CSV desde cualquier gráfico o sección.
 
 ---
 
@@ -64,6 +65,24 @@ El frontend está desarrollado con Next.js 16 App Router, los gráficos usan Rec
 | Payments | `GET /api/payments/analytics/disputes` | Inteligencia de disputas (razones y resoluciones) |
 | Payments | `GET /api/payments/sellers/top` | Top sellers por volumen |
 
+### Buyer Analytics (`/dashboard/buyer`)
+| App | Endpoint | Qué muestra |
+|---|---|---|
+| Buyer | `GET /api/analytics/buyers/overview` | Totales, nuevos, con dirección, sin dirección |
+| Buyer | `GET /api/analytics/buyers/new` | Nuevos compradores en el período |
+| Buyer | `GET /api/analytics/buyers/with-address` | Compradores con dirección de envío |
+| Buyer | `GET /api/analytics/buyers/without-address` | Compradores sin dirección de envío |
+| Buyer | `GET /api/analytics/carts/overview` | Carritos activos, abandonados, totales |
+| Buyer | `GET /api/analytics/carts/active` | Carritos activos |
+| Buyer | `GET /api/analytics/carts/abandoned` | Carritos abandonados |
+| Buyer | `GET /api/analytics/carts/average-items` | Promedio de items por carrito |
+| Buyer | `GET /api/analytics/carts/top-products` | Productos más agregados a carritos |
+| Buyer | `GET /api/analytics/carts/by-buyer` | Carritos por comprador |
+| Buyer | `GET /api/analytics/shipping-addresses/overview` | Direcciones de envío: total, completas, incompletas |
+| Buyer | `GET /api/analytics/shipping-addresses/by-city` | Direcciones agrupadas por ciudad |
+| Buyer | `GET /api/analytics/shipping-addresses/by-province` | Direcciones agrupadas por provincia |
+| Buyer | `GET /api/analytics/shipping-addresses/completeness` | Completitud de direcciones |
+
 ### Shipping Analytics (`/dashboard/shipping`)
 | App | Endpoint | Qué muestra |
 |---|---|---|
@@ -72,17 +91,6 @@ El frontend está desarrollado con Next.js 16 App Router, los gráficos usan Rec
 | Shipping | `GET /api/analytics/recent-activity` | Feed de actividad reciente |
 | Shipping | `GET /api/analytics/delivery-heatmap` | Mapa de calor por hora/día |
 | Shipping | `GET /api/admin/shipments/incidents` | Incidentes de envío |
-
----
-
-## Próximas implementaciones
-
-- **Buyer App**: integrar `/api/buyer/*` para métricas de comportamiento de usuarios, frecuencia de compra y segmentación.
-- **Panel de usuarios**: sección administrativa para visualizar datos de cada usuario, sus órdenes, productos y actividad, con acciones de habilitar/deshabilitar.
-- **Órdenes**: vista detallada con timeline, posibilidad de cancelar órdenes pendientes desde el dashboard.
-- **Comparativa entre apps**: gráfico unificado que cruce datos de Seller y Payments (ej. órdenes vs transacciones).
-- **Alertas**: notificaciones ante umbrales críticos (ej. alta tasa de disputas, stock agotado, caída de servicio).
-- **Chat IA Leafy**: integrar el asistente Leafy para consultas sobre métricas en lenguaje natural.
 
 ---
 

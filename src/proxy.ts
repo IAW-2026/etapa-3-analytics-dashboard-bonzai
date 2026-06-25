@@ -6,7 +6,7 @@ export const proxy = clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
-});
+}, { signInUrl: "/login" });
 
 export const config = {
   matcher: [

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { RefreshCw, Search, X, Truck } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary/ErrorBoundary";
 import { ChartCard } from "@/components/charts/ChartCard/ChartCard";
 import { ExportCsvButton } from "@/components/ui/ExportCsvButton/ExportCsvButton";
@@ -40,6 +40,9 @@ const BY_TYPE_COLORS = ["#1B3D2F", "#2D5A46", "#6B7D5F", "#8A9B7E", "#D4A853", "
 export default function ShippingAnalyticsPage() {
   const searchParams = useSearchParams();
 
+  const today = new Date().toISOString().slice(0, 10);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+
   const [stats, setStats] = useState<DeliveryStats | null>(null);
   const [shipmentsByType, setShipmentsByType] = useState<ShipmentByType[]>([]);
   const [shipments, setShipments] = useState<PaginatedResponse<Shipment> | null>(null);
@@ -50,24 +53,40 @@ export default function ShippingAnalyticsPage() {
   const currentPage = Math.max(1, Number(searchParams.get("page")) || 1);
   const initialSearch = searchParams.get("search") || "";
   const initialStatus = (searchParams.get("status") || "") as ShipmentStatus | "";
+  const initialFrom = searchParams.get("from") || thirtyDaysAgo;
+  const initialTo = searchParams.get("to") || today;
+  const initialGranularity = (searchParams.get("granularity") as "day" | "week" | "month") || "day";
 
   const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState<ShipmentStatus | "">(initialStatus);
   const [appliedSearch, setAppliedSearch] = useState(initialSearch);
+  const [from, setFrom] = useState(initialFrom);
+  const [to, setTo] = useState(initialTo);
+  const [granularity, setGranularity] = useState<"day" | "week" | "month">(initialGranularity);
+
+  const fromISO = from ? `${from}T00:00:00.000Z` : "";
+  const toISO = to ? `${to}T23:59:59.000Z` : "";
 
   const fetchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const overviewFetchRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const statusRef = useRef(statusFilter);
   statusRef.current = statusFilter;
   const appliedSearchRef = useRef(appliedSearch);
   appliedSearchRef.current = appliedSearch;
+  const fromRef = useRef(from);
+  fromRef.current = from;
+  const toRef = useRef(to);
+  toRef.current = to;
+  const granularityRef = useRef(granularity);
+  granularityRef.current = granularity;
 
   const fetchOverview = useCallback(() => {
     setLoadingOverview(true);
 
     Promise.allSettled([
-      shippingApi.getDeliveryStats(),
-      shippingApi.getShipmentsByType(),
-      shippingApi.getRecentActivity(),
+      shippingApi.getDeliveryStats(fromISO || undefined, toISO || undefined, granularity),
+      shippingApi.getShipmentsByType(fromISO || undefined, toISO || undefined),
+      shippingApi.getRecentActivity(fromISO || undefined, toISO || undefined),
     ]).then(([s, bt, ac]) => {
       if (s.status === "fulfilled") setStats(s.value);
       else setStats(null);
@@ -78,16 +97,16 @@ export default function ShippingAnalyticsPage() {
       if (ac.status === "fulfilled") setActivity(ac.value);
       else setActivity([]);
     }).finally(() => setLoadingOverview(false));
-  }, []);
+  }, [fromISO, toISO, granularity]);
 
   const fetchShipments = useCallback((page: number, status: string, searchValue: string) => {
     setLoadingShipments(true);
 
-    shippingApi.getShipments(page, PAGE_SIZE, status || undefined, searchValue || undefined)
+    shippingApi.getShipments(page, PAGE_SIZE, status || undefined, searchValue || undefined, fromISO || undefined, toISO || undefined)
       .then((sh) => setShipments(sh))
       .catch(() => setShipments(null))
       .finally(() => setLoadingShipments(false));
-  }, []);
+  }, [fromISO, toISO]);
 
   useEffect(() => {
     fetchOverview();
@@ -101,17 +120,26 @@ export default function ShippingAnalyticsPage() {
   }, [fetchShipments, currentPage, statusFilter, appliedSearch]);
 
   useEffect(() => {
+    clearTimeout(overviewFetchRef.current);
+    overviewFetchRef.current = setTimeout(fetchOverview, 400);
+    return () => clearTimeout(overviewFetchRef.current);
+  }, [fetchOverview]);
+
+  useEffect(() => {
     if (!shipments || loadingShipments) return;
     if (shipments.meta.total_pages > 0 && currentPage > shipments.meta.total_pages) {
-      syncURL(shipments.meta.total_pages, statusRef.current, appliedSearchRef.current);
+      syncURL(shipments.meta.total_pages, statusRef.current, appliedSearchRef.current, fromRef.current, toRef.current, granularityRef.current);
     }
   }, [shipments]);
 
-  const syncURL = (page: number, status: ShipmentStatus | "", searchValue: string) => {
+  const syncURL = (page: number, status: ShipmentStatus | "", searchValue: string, fromVal: string, toVal: string, gran: string) => {
     const params = new URLSearchParams();
     if (page > 1) params.set("page", String(page));
     if (status) params.set("status", status);
     if (searchValue) params.set("search", searchValue);
+    if (fromVal !== thirtyDaysAgo) params.set("from", fromVal);
+    if (toVal !== today) params.set("to", toVal);
+    if (gran !== "day") params.set("granularity", gran);
     const qs = params.toString();
     window.history.replaceState(null, "", `/dashboard/shipping${qs ? `?${qs}` : ""}`);
   };
@@ -119,7 +147,7 @@ export default function ShippingAnalyticsPage() {
   const handleApplySearch = () => {
     clearTimeout(fetchRef.current);
     setAppliedSearch(search);
-    syncURL(1, statusFilter, search);
+    syncURL(1, statusFilter, search, from, to, granularity);
     fetchShipments(1, statusFilter, search);
   };
 
@@ -128,20 +156,38 @@ export default function ShippingAnalyticsPage() {
   };
 
   const handlePageChange = (page: number) => {
-    syncURL(page, statusFilter, appliedSearch);
+    syncURL(page, statusFilter, appliedSearch, from, to, granularity);
   };
 
   const handleStatusChange = (value: string) => {
     const newStatus = value as ShipmentStatus | "";
     setStatusFilter(newStatus);
-    syncURL(1, newStatus, appliedSearch);
+    syncURL(1, newStatus, appliedSearch, from, to, granularity);
+  };
+
+  const handleFromChange = (value: string) => {
+    setFrom(value);
+    syncURL(1, statusFilter, appliedSearch, value, to, granularity);
+  };
+
+  const handleToChange = (value: string) => {
+    setTo(value);
+    syncURL(1, statusFilter, appliedSearch, from, value, granularity);
+  };
+
+  const handleGranularityChange = (value: "day" | "week" | "month") => {
+    setGranularity(value);
+    syncURL(1, statusFilter, appliedSearch, from, to, value);
   };
 
   const handleClearFilters = () => {
     setSearch("");
     setStatusFilter("");
     setAppliedSearch("");
-    syncURL(1, "", "");
+    setFrom(thirtyDaysAgo);
+    setTo(today);
+    setGranularity("day");
+    syncURL(1, "", "", thirtyDaysAgo, today, "day");
   };
 
   const handleRefresh = () => {
@@ -150,8 +196,20 @@ export default function ShippingAnalyticsPage() {
     fetchShipments(currentPage, statusFilter, appliedSearch);
   };
 
-  const hasActiveFilters = statusFilter !== "" || appliedSearch !== "";
+  const hasActiveFilters = statusFilter !== "" || appliedSearch !== "" || from !== thirtyDaysAgo || to !== today || granularity !== "day";
   const isFirstLoad = loadingOverview || loadingShipments;
+
+  const formatPeriodLabel = (period: string): string => {
+    const datePart = period.split(" ")[0];
+    const d = new Date(datePart + "T00:00:00");
+    if (granularity === "month") {
+      return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    }
+    if (granularity === "week") {
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   const statusPieData = stats
     ? (Object.entries(stats.by_status) as [ShipmentStatus, number][]).map(([k, v]) => ({
@@ -177,6 +235,29 @@ export default function ShippingAnalyticsPage() {
           </button>
         </div>
       </header>
+
+      <div className={styles.dateFilterBar}>
+        <div className={styles.dateGroup}>
+          <label className={styles.filterLabel}>From</label>
+          <input type="date" value={from} onChange={(e) => handleFromChange(e.target.value)} className={styles.dateInput} disabled={loadingOverview || loadingShipments} />
+        </div>
+        <div className={styles.dateGroup}>
+          <label className={styles.filterLabel}>To</label>
+          <input type="date" value={to} onChange={(e) => handleToChange(e.target.value)} className={styles.dateInput} disabled={loadingOverview || loadingShipments} />
+        </div>
+        <div className={styles.groupToggle}>
+          {(["day", "week", "month"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => handleGranularityChange(v)}
+              className={`${styles.toggleBtn} ${granularity === v ? styles.toggleActive : ""}`}
+              disabled={loadingOverview || loadingShipments}
+            >
+              {v === "day" ? "Day" : v === "week" ? "Week" : "Month"}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {loadingOverview ? (
         <>
@@ -210,6 +291,34 @@ export default function ShippingAnalyticsPage() {
           <ErrorBoundary>
             <ActivityHeatmap events={activity} loading={false} />
           </ErrorBoundary>
+
+          {stats?.periods && stats.periods.length > 0 && (
+            <ErrorBoundary>
+              <ChartCard
+                title="Shipments Over Time"
+                description={`${granularity === "day" ? "Daily" : granularity === "week" ? "Weekly" : "Monthly"} shipment breakdown by status`}
+                tall
+              >
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.periods.map((p) => ({ ...p, label: formatPeriodLabel(p.period) }))}>
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={{ fontSize: 12, border: "1px solid #E5E7EB", borderRadius: 4 }} />
+                    <Bar dataKey="DELIVERED" stackId="a" fill="#16A34A" name="Delivered" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="PENDING" stackId="a" fill="#D4A853" name="Pending" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="IN_TRANSIT" stackId="a" fill="#1B3D2F" name="In Transit" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="ASSIGNED" stackId="a" fill="#6B7D5F" name="Assigned" radius={[0, 0, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className={styles.pieLegend}>
+                  <div className={styles.pieLegendItem}><span className={styles.pieLegendDot} style={{ background: "#16A34A" }} />Delivered</div>
+                  <div className={styles.pieLegendItem}><span className={styles.pieLegendDot} style={{ background: "#D4A853" }} />Pending</div>
+                  <div className={styles.pieLegendItem}><span className={styles.pieLegendDot} style={{ background: "#1B3D2F" }} />In Transit</div>
+                  <div className={styles.pieLegendItem}><span className={styles.pieLegendDot} style={{ background: "#6B7D5F" }} />Assigned</div>
+                </div>
+              </ChartCard>
+            </ErrorBoundary>
+          )}
 
           <ErrorBoundary>
             <div className={styles.chartGrid}>

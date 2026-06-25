@@ -29,23 +29,37 @@ async function get<T>(path: string, params?: Record<string, string>): Promise<T>
 }
 
 export const shippingApi = {
-  getDeliveryStats: () =>
-    get<DeliveryStats>("/api/analytics/delivery-stats"),
+  getDeliveryStats: (from?: string, to?: string, granularity?: string) => {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    if (granularity) params.granularity = granularity;
+    return get<DeliveryStats>("/api/analytics/delivery-stats", params);
+  },
 
-  getShipments: (page = 1, limit = 10, status?: string, search?: string) => {
+  getShipments: (page = 1, limit = 10, status?: string, search?: string, from?: string, to?: string) => {
     const params: Record<string, string> = { page: String(page), limit: String(limit) };
     if (status) params.status = status;
     if (search) params.q = search;
+    if (from) params.from = from;
+    if (to) params.to = to;
     return get<PaginatedResponse<Shipment>>("/api/admin/shipments", params);
   },
 
-  getRecentActivity: async () => {
-    const data = await get<{ data?: TrackingEvent[] } | TrackingEvent[]>("/api/analytics/recent-activity");
+  getRecentActivity: async (from?: string, to?: string) => {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const data = await get<{ data?: TrackingEvent[] } | TrackingEvent[]>("/api/analytics/recent-activity", params);
     return Array.isArray(data) ? data : (data as { data?: TrackingEvent[] }).data ?? [];
   },
 
-  getShipmentsByType: () =>
-    get<{ data: ShipmentByType[] }>("/api/analytics/shipments-by-type"),
+  getShipmentsByType: (from?: string, to?: string) => {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    return get<{ data: ShipmentByType[] }>("/api/analytics/shipments-by-type", params);
+  },
 
   getDrivers: (page = 1) =>
     get<PaginatedResponse<Driver>>("/api/admin/drivers", { page: String(page) }),

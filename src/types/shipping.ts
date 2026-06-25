@@ -1,11 +1,20 @@
 export type ShipmentStatus = 'PENDING' | 'ASSIGNED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED';
 export type DriverStatus = 'AVAILABLE' | 'ASSIGNED' | 'SUSPENDED' | 'INACTIVE';
 
+export interface DeliveryPeriod {
+  period: string;
+  DELIVERED: number;
+  PENDING: number;
+  IN_TRANSIT: number;
+  ASSIGNED: number;
+}
+
 export interface DeliveryStats {
   total_shipments: number;
   active_shipments: number;
   success_rate_percentage: number;
   by_status: Record<ShipmentStatus, number>;
+  periods?: DeliveryPeriod[];
 }
 
 export interface Shipment {
