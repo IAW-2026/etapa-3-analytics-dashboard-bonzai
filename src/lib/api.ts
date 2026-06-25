@@ -29,7 +29,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getStatistics: () => request<any>("/api/admin/statistics"),
+  getStatistics: (from?: string, to?: string) =>
+    request<any>(`/api/admin/statistics?${new URLSearchParams({ ...(from && { from }), ...(to && { to }) }).toString()}`),
   getAnalyticsOverview: () => request<any>("/api/admin/analytics"),
   getAnalyticsOrders: (from?: string, to?: string, groupBy?: string) =>
     request<any>(`/api/admin/analytics/orders?${new URLSearchParams({ ...(from && { from }), ...(to && { to }), ...(groupBy && { groupBy }) }).toString()}`),

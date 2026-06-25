@@ -59,11 +59,11 @@ export default function SellerAnalyticsPage() {
   const doFetch = useCallback(() => {
     setLoading(true);
     Promise.all([
-      api.getStatistics(),
+      api.getStatistics(from, to),
       api.getAnalyticsRevenue(from, to, groupBy),
       api.getAnalyticsOrders(from, to, groupBy),
-      api.getAnalyticsReviews(),
-      api.getAnalyticsReservations(),
+      api.getAnalyticsReviews(from, to),
+      api.getAnalyticsReservations(from, to),
     ])
       .then(([s, rev, ord, rvw, res]) => {
         setStats(s);
@@ -96,7 +96,6 @@ export default function SellerAnalyticsPage() {
   }, [from, to, groupBy]);
 
   const s = stats?.summary || {};
-  const trend = stats?.revenueTrend || [];
 
   const statusTotals = ordersData ? ordersData.reduce((acc: any, o: any) => {
     acc.pending = (acc.pending || 0) + (o.pending || 0);
@@ -113,11 +112,11 @@ export default function SellerAnalyticsPage() {
     color: STATUS_COLORS[k as keyof typeof STATUS_COLORS],
   }));
 
-  const lastRev = trend.length >= 2 ? trend[trend.length - 1].revenue : null;
-  const prevRev = trend.length >= 2 ? trend[trend.length - 2].revenue : null;
+  const lastRev = revenueData.length >= 2 ? revenueData[revenueData.length - 1].revenue : null;
+  const prevRev = revenueData.length >= 2 ? revenueData[revenueData.length - 2].revenue : null;
   const revChange = lastRev != null && prevRev != null ? pctChange(lastRev, prevRev) : null;
-  const lastOrd = trend.length >= 2 ? trend[trend.length - 1].orders : null;
-  const prevOrd = trend.length >= 2 ? trend[trend.length - 2].orders : null;
+  const lastOrd = ordersData.length >= 2 ? ordersData[ordersData.length - 1].total : null;
+  const prevOrd = ordersData.length >= 2 ? ordersData[ordersData.length - 2].total : null;
   const ordChange = lastOrd != null && prevOrd != null ? pctChange(lastOrd, prevOrd) : null;
 
   const csvRevenue = revenueData ? revenueData.map((d: any) => [d.month, String(d.revenue || 0), String(d.orders || 0)]) : [];
